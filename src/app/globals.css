@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ذهب مطفي رزين (Old Gold) */
+  --color-gold: oklch(0.70 0.10 85); 
+  --color-gold-light: oklch(0.88 0.05 90);
+  
+  /* كحلي ملكي فحمي (Charcoal Navy) - درجة الوقار */
+  --color-royal-charcoal: oklch(0.15 0.04 250); 
+  /* توهج ملكي خفيف للخلفية */
+  --color-royal-glow: oklch(0.25 0.08 250);
+
+  --font-sans: var(--font-almarai), system-ui;
+  --animate-pulse-slow: pulse-dynamic 12s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --spacing-112: 28rem;  /* 448px */
+  --spacing-128: 32rem;  /* 512px */
+  --spacing-136: 34rem;  /* 544px */
+  --spacing-152: 38rem;  /* 608px */
+  --spacing-scale-offset: -20px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* الخلفية الآن كحلي فحمي عميق */
+  --background: var(--color-royal-charcoal);
+  --foreground: oklch(0.98 0.01 250);
+  
+  /* زجاج احترافي بلمسة كحلية */
+  --glass-bg: color-mix(in oklch, var(--color-royal-charcoal) 60%, transparent);
+  --glass-border: color-mix(in oklch, var(--color-gold) 20%, transparent);
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    /* توزيع الإضاءة الملكية في الزوايا */
+    background-image: 
+      radial-gradient(circle at 0% 0%, color-mix(in oklch, var(--color-royal-glow) 30%, transparent) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, color-mix(in oklch, var(--color-gold) 10%, transparent) 0%, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  .logo-render {
+    filter: drop-shadow(0 0 30px color-mix(in oklch, var(--color-gold) 25%, transparent));
+    will-change: filter;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* كارت المحاماة الزجاجي */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    background: color-mix(in oklch, var(--color-gold) 5%, var(--glass-bg));
+    border-color: var(--color-gold);
+    transform: translateY(-6px);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6),
+                0 0 20px 0 color-mix(in oklch, var(--color-gold) 15%, transparent);
+  }
+  
+  /* النص الذهبي الفخم */
+  .text-gradient-gold {
+    background-image: linear-gradient(to bottom right, var(--color-gold-light), var(--color-gold), var(--color-gold-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: brightness(1.1);
+  }
+}
+
+/* Scrollbar وقور */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-gold);
+  border-radius: 100vh;
+}
+
+@keyframes pulse-dynamic {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
 }
