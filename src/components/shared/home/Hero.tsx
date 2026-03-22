@@ -61,7 +61,7 @@ export const Hero: React.FC = () => {
             </h1>
             
             <p className="text-white/70 text-lg md:text-xl mb-12 max-w-2xl mx-auto lg:mr-0 leading-relaxed font-light">
-              مكتب المحامي <strong className="text-white font-bold">حسين الحارثي</strong>، وجهتكم الموثوقة للعدالة والاستشارات القانونية المتكاملة، حيث الخبرة تلتقي بالنزاهة.
+              مكتب المحامي وكاتب العدل خاص <strong className="text-white font-bold">حسين الحارثي</strong>، وجهتكم الموثوقة للعدالة والاستشارات القانونية المتكاملة، حيث الخبرة تلتقي بالنزاهة.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">

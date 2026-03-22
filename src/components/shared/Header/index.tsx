@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
 
           <div className="flex flex-col leading-tight  sm:flex">
              <span className="text-gold font-bold text-lg md:text-xl tracking-wide uppercase">حسين الحارثي</span>
-             <span className="text-white/50 text-xs tracking-widest mt-0.5">محامي وموثق</span>
+             <span className="text-white/50 text-xs tracking-widest mt-0.5">محامي وكاتب عدل خاص</span>
           </div>
         </Link>
 

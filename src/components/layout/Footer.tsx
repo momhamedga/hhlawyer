@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, MapPin, Instagram, Twitter, Linkedin, Phone } from 'lucide-react';
+import { Mail, MapPin, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -35,8 +35,8 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex flex-col items-center gap-2 order-1 md:order-2">
-            <Link href="tel:+9710000000" className="text-3xl md:text-4xl font-bold text-white hover:text-gold transition-colors tracking-tighter" dir="ltr">
-              +971 00 000 0000
+            <Link href="tel:+971502001797" className="text-3xl md:text-4xl font-bold text-white hover:text-gold transition-colors tracking-tighter" dir="ltr">
+             0502001797
             </Link>
             <p className="flex items-center gap-2 text-white/40 text-sm">
               <MapPin size={14} className="text-gold" />
@@ -95,7 +95,8 @@ export const Footer: React.FC = () => {
         {/* 5. الجزء السفلي: الحقوق */}
         <div className="w-full pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-5 text-sm">
           <p className="text-white/20 font-light text-center md:text-right">
-            جميع الحقوق محفوظة © {currentYear} مكتب حسين الحارثي للمحاماة.
+            جميع الحقوق محفوظة © {currentYear} مكتب حسين الحارثي               للمحاماة والاستشارات القانونية
+.
           </p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="text-white/10 hover:text-white transition-colors">سياسة الخصوصية</Link>

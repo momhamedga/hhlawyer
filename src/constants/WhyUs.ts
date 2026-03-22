@@ -1,5 +1,5 @@
-import { ValueItem } from '@/types/WhyUs';
-import { ShieldCheck, Bolt, MapPin, Handshake } from 'lucide-react';
+import {  ValueItem } from '@/types/WhyUs';
+import { ShieldCheck, Bolt, MapPin, Handshake , Zap, Scale, Award} from 'lucide-react';
 
 export const VALUES_PROPOSITION: ValueItem[] = [
   {
@@ -26,4 +26,35 @@ export const VALUES_PROPOSITION: ValueItem[] = [
     desc: 'نتعامل بصدق مطلق في توضيح المواقف القانونية والتكاليف المتوقعة منذ البداية.',
     gradient: 'from-white/10 to-transparent' // توهج أبيض للنزاهة
   }
+];
+
+
+
+
+
+export const WHY_US_VALUES: ValueItem[] = [
+  { 
+    title: "دقة التنفيذ", 
+    desc: "نحلل أدق التفاصيل لضمان الأمان القانوني.", 
+    icon: ShieldCheck,
+    gradient: "from-gold/20 via-gold/5 to-transparent" 
+  },
+  { 
+    title: "سرعة الاستجابة", 
+    desc: "فريق مخصص للرد الفوري على الاستشارات.", 
+    icon: Zap,
+    gradient: "from-blue-500/20 via-blue-500/5 to-transparent"
+  },
+  { 
+    title: "نزاهة مهنية", 
+    desc: "الشفافية هي أساس علاقتنا بالموكلين.", 
+    icon: Scale,
+    gradient: "from-emerald-500/20 via-emerald-500/5 to-transparent"
+  },
+  { 
+    title: "خبرة محلية", 
+    desc: "فهم عميق للتشريعات في دولة الإمارات.", 
+    icon: Award,
+    gradient: "from-purple-500/20 via-purple-500/5 to-transparent"
+  },
 ];

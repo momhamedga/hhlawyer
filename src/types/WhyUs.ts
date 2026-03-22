@@ -6,3 +6,8 @@ export interface ValueItem {
   desc: string;
   gradient: string; // التدرج اللوني النيون عند التحويم
 }
+
+
+export interface ValueCardProps extends ValueItem {
+  index: number;
+}
