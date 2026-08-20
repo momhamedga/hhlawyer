@@ -1,0 +1,392 @@
+@import "tailwindcss";
+
+/*
+ * Modern Trust design tokens. Components consume semantic names instead of
+ * hard-coded colors, so the same UI works in light, dark, and system themes.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+  --radius-ds-sm: var(--radius-sm);
+  --radius-ds-md: var(--radius-md);
+  --radius-ds-lg: var(--radius-lg);
+  --radius-ds-xl: var(--radius-xl);
+  --shadow-elevation-sm: var(--shadow-sm);
+  --shadow-elevation-md: var(--shadow-md);
+  --shadow-elevation-lg: var(--shadow-lg);
+
+  /* Legacy branding aliases are decorative only; interaction uses semantic tokens. */
+  --color-gold: #a8793f;
+  --color-gold-light: #d9b678;
+  --color-royal-charcoal: #111c2e;
+  --color-royal-glow: #1e3a5f;
+  --animate-pulse-slow: pulse-slow 3s ease-in-out infinite;
+}
+
+.font-arabic,
+.font-arabic body {
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+}
+
+.font-english,
+.font-english body {
+  --font-sans: var(--font-english), system-ui, sans-serif;
+}
+
+:root {
+  --background: #f4f0e9;
+  --foreground: #241f1a;
+  --card: #ffffff;
+  --card-foreground: #241f1a;
+  --popover: #fffdf9;
+  --popover-foreground: #241f1a;
+  --primary: #241f1a;
+  --primary-foreground: #f7f1e7;
+  --secondary: #ebe4da;
+  --secondary-foreground: #241f1a;
+  --muted: #eee8df;
+  --muted-foreground: #6c6054;
+  --accent: #b88745;
+  --accent-foreground: #20180f;
+  --border: #d9d0c3;
+  --input: #b9ad9e;
+  --ring: #8e6230;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #087c6c;
+  --success-foreground: #ffffff;
+  --warning: #8a5b00;
+  --warning-foreground: #ffffff;
+  --info: #1d5e86;
+  --info-foreground: #ffffff;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --shadow-sm: 0 1px 2px rgb(36 31 26 / 0.08);
+  --shadow-md: 0 8px 24px rgb(36 31 26 / 0.1);
+  --shadow-lg: 0 16px 40px rgb(36 31 26 / 0.14);
+  --brand-charcoal: #241f1a;
+  --brand-ivory: #f4f0e9;
+  --brand-surface: #ffffff;
+  --brand-muted: #6c6054;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #15120f;
+  --foreground: #f3ece1;
+  --card: #211c17;
+  --card-foreground: #f3ece1;
+  --popover: #211c17;
+  --popover-foreground: #f3ece1;
+  --primary: #f3ece1;
+  --primary-foreground: #211a14;
+  --secondary: #2b241d;
+  --secondary-foreground: #f3ece1;
+  --muted: #2a231c;
+  --muted-foreground: #b7ab9d;
+  --accent: #d9af6c;
+  --accent-foreground: #21170d;
+  --border: #41382f;
+  --input: #625647;
+  --ring: #d9af6c;
+  --destructive: #bd322b;
+  --destructive-foreground: #fff0ee;
+  --success: #52c9af;
+  --success-foreground: #06352e;
+  --warning: #e0b75a;
+  --warning-foreground: #302000;
+  --info: #8dd8f8;
+  --info-foreground: #07334d;
+  --brand-charcoal: #15120f;
+  --brand-ivory: #f3ece1;
+  --brand-surface: #211c17;
+  --brand-muted: #b7ab9d;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    background-color: var(--background);
+    overflow-x: clip;
+    scrollbar-color: color-mix(in srgb, var(--accent) 72%, var(--muted-foreground)) var(--background);
+    scrollbar-width: thin;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+html::-webkit-scrollbar { width: 8px; }
+html::-webkit-scrollbar-track { background: var(--background); }
+html::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 72%, var(--muted-foreground)); }
+html::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+@layer components {
+  .glass-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .glass-card:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #a8793f, #d9b678);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .ds-display {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .ds-h1 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .ds-h2 {
+    font-size: clamp(1.375rem, 2vw, 1.875rem);
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .ds-h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .ds-h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .ds-body-lg {
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+
+  .ds-body {
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .ds-body-sm {
+    font-size: 0.875rem;
+    line-height: 1.65;
+  }
+
+  .ds-caption {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+}
+
+/* Migration bridge for pre-foundation public components. It keeps existing
+ * functionality intact while replacing dark-only glass surfaces with tokens. */
+.public-surface,
+.public-surface .bg-white\/1,
+.public-surface .bg-white\/2,
+.public-surface .bg-white\/3,
+.public-surface .bg-white\/5 {
+  background-color: var(--card) !important;
+}
+
+.public-surface .border-white\/5,
+.public-surface .border-white\/10,
+.public-surface .border-white\/20 { border-color: var(--border) !important; }
+.public-surface .text-white,
+.public-surface .text-white\/90,
+.public-surface .text-white\/80 { color: var(--foreground) !important; }
+.public-surface .text-white\/70,
+.public-surface .text-white\/60,
+.public-surface .text-white\/50,
+.public-surface .text-white\/40,
+.public-surface .text-white\/30,
+.public-surface .text-white\/20 { color: var(--muted-foreground) !important; }
+.public-surface .text-gold,
+.public-surface .text-gold-light { color: var(--primary) !important; }
+.public-surface .bg-gold { background-color: var(--primary) !important; }
+.public-surface .text-black { color: var(--primary-foreground) !important; }
+.public-surface .bg-royal-charcoal { background-color: var(--background) !important; }
+.public-surface [class*="backdrop-blur"] { backdrop-filter: none !important; }
+
+/* Admin routes are detected by the shared shell, allowing the established
+ * operation screens to inherit one calm table/form contract without altering
+ * their API behavior or stable E2E selectors. */
+body:has(header[data-admin-shell="true"]) main { color: var(--foreground); }
+body:has(header[data-admin-shell="true"]) main > section > header > h1,
+body:has(header[data-admin-shell="true"]) main h1 { color: var(--foreground); letter-spacing: -0.02em; }
+body:has(header[data-admin-shell="true"]) main fieldset,
+body:has(header[data-admin-shell="true"]) main > section > section,
+body:has(header[data-admin-shell="true"]) main [role="dialog"],
+body:has(header[data-admin-shell="true"]) main [role="alertdialog"] { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-sm); }
+body:has(header[data-admin-shell="true"]) main fieldset { padding: 1rem; }
+body:has(header[data-admin-shell="true"]) main label { display: grid; gap: 0.4rem; color: var(--foreground); font-size: 0.875rem; font-weight: 700; }
+body:has(header[data-admin-shell="true"]) main input:not([type="checkbox"]),
+body:has(header[data-admin-shell="true"]) main select,
+body:has(header[data-admin-shell="true"]) main textarea { min-height: 2.75rem; width: 100%; border: 1px solid var(--input); border-radius: var(--radius-md); background: var(--card); color: var(--card-foreground); padding: 0.5rem 0.75rem; font-size: 1rem; }
+body:has(header[data-admin-shell="true"]) main textarea { min-height: 7rem; }
+body:has(header[data-admin-shell="true"]) main input:focus-visible,
+body:has(header[data-admin-shell="true"]) main select:focus-visible,
+body:has(header[data-admin-shell="true"]) main textarea:focus-visible,
+body:has(header[data-admin-shell="true"]) main button:focus-visible,
+body:has(header[data-admin-shell="true"]) main a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+body:has(header[data-admin-shell="true"]) main button:not([class]) { min-height: 2.5rem; border-radius: var(--radius-md); background: var(--primary); color: var(--primary-foreground); padding: 0.5rem 0.875rem; font-size: 0.875rem; font-weight: 700; }
+body:has(header[data-admin-shell="true"]) main button:not([class]):disabled { cursor: not-allowed; opacity: 0.6; }
+body:has(header[data-admin-shell="true"]) main table { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); border-collapse: separate; border-spacing: 0; }
+body:has(header[data-admin-shell="true"]) main th { background: var(--secondary); color: var(--secondary-foreground); font-size: 0.75rem; font-weight: 800; text-align: start; }
+body:has(header[data-admin-shell="true"]) main th,
+body:has(header[data-admin-shell="true"]) main td { border-bottom: 1px solid var(--border); padding: 0.875rem 1rem; vertical-align: middle; }
+body:has(header[data-admin-shell="true"]) main tbody tr:last-child td { border-bottom: 0; }
+body:has(header[data-admin-shell="true"]) main tbody tr:hover { background: var(--muted); }
+body:has(header[data-admin-shell="true"]) main td a { color: var(--primary); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+body:has(header[data-admin-shell="true"]) main .text-black { color: var(--card-foreground) !important; }
+body:has(header[data-admin-shell="true"]) main .bg-gold { background-color: var(--primary) !important; }
+body:has(header[data-admin-shell="true"]) main .text-gold,
+body:has(header[data-admin-shell="true"]) main .text-gold-light { color: var(--primary) !important; }
+
+/* The existing dashboard markup is progressively migrated through this scoped
+ * bridge, keeping every existing data-testid and permission path intact. */
+.admin-dashboard .bg-black\/20,
+.admin-dashboard .bg-black {
+  background-color: var(--card) !important;
+}
+
+.admin-dashboard .bg-white\/5,
+.admin-dashboard .bg-white\/10 {
+  background-color: var(--muted) !important;
+}
+
+.admin-dashboard .border-white\/15,
+.admin-dashboard .border-white\/30 {
+  border-color: var(--border) !important;
+}
+
+.admin-dashboard .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border) !important;
+}
+
+.admin-dashboard .text-white\/75,
+.admin-dashboard .text-white\/70,
+.admin-dashboard .text-white\/60 {
+  color: var(--muted-foreground) !important;
+}
+
+.admin-dashboard .text-gold {
+  color: var(--primary) !important;
+}
+
+.admin-dashboard .bg-gold {
+  background-color: var(--primary) !important;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Isolated Phase 8B exploration routes own their preview chrome. The selector
+ * only applies while a `.previewCanvas` exists, leaving production unchanged. */
+body:has(.previewCanvas) > header,
+body:has(.previewCanvas) > footer,
+body:has(.previewCanvas) > div[aria-hidden="true"] { display: none !important; }
+
+body:has(.previewCanvas) > main { padding-top: 0 !important; }
+
+/* Legal Guides own a light editorial surface and inherit this warm dark mode
+ * treatment without changing the application-wide theme contract. */
+.dark main[data-testid="guides-index"],
+.dark main[data-testid="guide-detail"] {
+  --guides-ink: #f5ebde;
+  --guides-muted: #c6b8a9;
+  --guides-line: color-mix(in srgb, #d8b36e 32%, transparent);
+  --guides-paper: #15110e;
+  --guides-soft: #211a15;
+  --guides-gold: #d8b36e;
+}
+
+.dark main[data-testid="guides-index"] [data-testid="guides-filters"] button[aria-pressed="true"],
+.dark main[data-testid="guides-index"] [data-testid="guides-featured"] a,
+.dark main[data-testid="guide-detail"] [data-testid="guides-practice-link"] a,
+.dark main[data-testid="guide-detail"] [data-testid="guides-consultation"] a {
+  background: #e0bd7c;
+  color: #201914;
+}
+
+.dark main[data-testid="guide-detail"] [data-testid="guide-key-point"] { background: #211a15; }
+.dark main[data-testid="guide-detail"] [data-testid="guide-key-point"] p { color: #f5ebde; }
+.dark main[data-testid="guide-detail"] [data-testid="guides-consultation"] { background: linear-gradient(115deg, #291d16, #0e0b09); }

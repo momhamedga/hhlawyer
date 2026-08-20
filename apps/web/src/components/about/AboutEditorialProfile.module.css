@@ -1,0 +1,80 @@
+.page { --about-ink: #2b2520; --about-muted: #6f6257; --about-gold: #a87b3f; --about-ivory: #f7f2e9; --about-paper: #fffdf9; --about-taupe: #e6d8c7; background: var(--about-paper); color: var(--about-ink); overflow: clip; }
+.hero, .story, .philosophy, .portraitMoment, .uae, .services, .closing { padding-inline: clamp(1.25rem, 5vw, 5.5rem); }
+.hero { align-items: center; background: linear-gradient(112deg, var(--about-ivory) 0%, #fbf8f2 61%, var(--about-taupe) 100%); display: grid; gap: clamp(2rem, 6vw, 7rem); grid-template-columns: minmax(0, .96fr) minmax(20rem, .74fr); min-height: min(52rem, calc(100svh - 4rem)); padding-block: clamp(4rem, 8vw, 8rem); position: relative; }
+.heroCopy { max-width: 44rem; }
+.label { color: var(--about-gold); font-size: .69rem; font-weight: 700; letter-spacing: .15em; margin: 0 0 1.1rem; text-transform: uppercase; }
+.identity { color: var(--about-muted); font-family: var(--font-editorial), Georgia, serif; font-size: clamp(1.25rem, 1.8vw, 1.8rem); margin: 0 0 .9rem; }
+.hero h1, .story h2, .philosophy h2, .portraitCopy h2, .uae h2, .services h2, .closing h2 { font-family: var(--font-editorial), Georgia, serif; font-weight: 500; letter-spacing: -.04em; line-height: 1.04; margin: 0; }
+.hero h1 { font-size: clamp(2.65rem, 4.5vw, 5rem); }
+.lead { color: var(--about-muted); font-size: clamp(1rem, 1.2vw, 1.13rem); line-height: 1.9; margin: 1.5rem 0 1.6rem; max-width: 35rem; }
+.location { border-inline-start: 1px solid var(--about-gold); color: var(--about-ink); font-size: .83rem; letter-spacing: .04em; margin: 0; padding-inline-start: .8rem; }
+.heroPortrait { align-self: stretch; min-height: clamp(26rem, 47vw, 43rem); position: relative; }
+.heroPortrait::before { background: color-mix(in srgb, var(--about-gold) 23%, transparent); content: ""; inset: 8% 7% 4% 10%; position: absolute; }
+.heroPortrait img { object-fit: contain; object-position: center bottom; z-index: 1; }
+.heroFrame { border: 1px solid color-mix(in srgb, var(--about-gold) 75%, transparent); inset: 5% 1% 7% 12%; position: absolute; z-index: 2; }
+.story { background: var(--about-paper); padding-block: clamp(5rem, 11vw, 10rem); }
+.story h2, .philosophy h2, .services h2 { font-size: clamp(2.2rem, 4.1vw, 4.5rem); max-width: 52rem; }
+.storyBody { align-items: start; display: grid; gap: clamp(2rem, 7vw, 8rem); grid-template-columns: minmax(0, 1.1fr) minmax(15rem, .7fr); margin-top: clamp(2.5rem, 6vw, 5rem); }
+.storyQuote { font-family: var(--font-editorial), Georgia, serif; font-size: clamp(1.65rem, 2.8vw, 3rem); letter-spacing: -.03em; line-height: 1.22; margin: 0; }
+.storyBody div { color: var(--about-muted); font-size: 1rem; line-height: 1.85; }
+.storyBody div p { margin: 0 0 1rem; }
+.philosophy { background: var(--about-ivory); padding-block: clamp(4.5rem, 9vw, 8rem); }
+.philosophy ol { border-top: 1px solid color-mix(in srgb, var(--about-ink) 18%, transparent); list-style: none; margin: clamp(2.4rem, 6vw, 5rem) 0 0; padding: 0; }
+.philosophy li { align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--about-ink) 18%, transparent); display: grid; gap: 1.2rem; grid-template-columns: 4rem minmax(0, 1fr) auto; min-height: 8.8rem; padding-block: 1.25rem; transition: padding-inline .22s ease, background-color .22s ease; }
+.philosophy li > span { color: var(--about-muted); font-size: .76rem; }
+.philosophy h3 { font-family: var(--font-editorial), Georgia, serif; font-size: clamp(1.45rem, 2.35vw, 2.3rem); font-weight: 500; letter-spacing: -.025em; margin: 0 0 .35rem; }
+.philosophy li p { color: var(--about-muted); line-height: 1.7; margin: 0; max-width: 43rem; }
+.philosophy li svg { color: var(--about-gold); opacity: .55; transition: transform .22s ease, opacity .22s ease; }
+.philosophy li:hover, .philosophy li:focus-within { background: color-mix(in srgb, var(--about-paper) 55%, transparent); padding-inline: .75rem; }
+.philosophy li:hover > span, .philosophy li:focus-within > span { color: var(--about-gold); }
+.philosophy li:hover svg, .philosophy li:focus-within svg { opacity: 1; transform: translateX(-.3rem); }
+[dir="rtl"] .philosophy li:hover svg, [dir="rtl"] .philosophy li:focus-within svg { transform: translateX(.3rem); }
+.portraitMoment { background: var(--about-paper); display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(16rem, .55fr); min-height: clamp(29rem, 54vw, 47rem); padding-block: clamp(4rem, 8vw, 7rem); position: relative; }
+.portraitImage { background: linear-gradient(135deg, #d8c5af, #f2e9dd); min-height: 29rem; overflow: hidden; position: relative; }
+.portraitImage::after { border-inline-end: 1px solid var(--about-gold); content: ""; inset-block: 9%; inset-inline-end: 8%; position: absolute; width: 15%; }
+.portraitImage img { object-fit: contain; object-position: center bottom; padding-inline: 5%; }
+.portraitCopy { align-self: end; background: var(--about-ivory); margin-block: 12%; margin-inline: clamp(-2rem, -3vw, -4rem) 0; padding: clamp(2rem, 4vw, 4rem); position: relative; z-index: 1; }
+.portraitCopy h2 { font-size: clamp(1.9rem, 3vw, 3.35rem); }
+.portraitCopy > p:last-child { color: var(--about-muted); font-size: .86rem; margin: 1.5rem 0 0; }
+.uae { background: var(--about-taupe); padding-block: clamp(5rem, 10vw, 9rem); position: relative; text-align: center; }
+.uaeRule { background: var(--about-gold); height: 1px; margin: 0 auto 1.2rem; width: clamp(4rem, 10vw, 8rem); }
+.uae h2 { font-size: clamp(2.8rem, 7vw, 7.8rem); }
+.uae > p:last-child { color: var(--about-muted); line-height: 1.8; margin: 1.5rem auto 0; max-width: 38rem; }
+.services { background: var(--about-paper); padding-block: clamp(5rem, 10vw, 9rem); }
+.services nav { border-top: 1px solid color-mix(in srgb, var(--about-ink) 18%, transparent); margin-top: clamp(2.4rem, 5vw, 4.5rem); }
+.services nav a { align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--about-ink) 18%, transparent); color: inherit; display: grid; gap: 1rem; grid-template-columns: 3.5rem minmax(0, 1fr) auto; min-height: 4.85rem; text-decoration: none; transition: background-color .2s ease, padding-inline .2s ease; }
+.services nav a:hover, .services nav a:focus-visible { background: var(--about-ivory); padding-inline: .75rem; }
+.services nav a > span:first-child { color: var(--about-gold); font-size: .73rem; }
+.services nav strong { font-family: var(--font-editorial), Georgia, serif; font-size: clamp(1.2rem, 1.75vw, 1.65rem); font-weight: 500; }
+.serviceAction { align-items: center; color: var(--about-muted); display: inline-flex; font-size: .79rem; gap: .45rem; }
+.closing { align-items: center; background: var(--about-ivory); display: flex; gap: 2rem; justify-content: space-between; padding-block: clamp(3.5rem, 7vw, 6.5rem); }
+.closing h2 { font-size: clamp(2rem, 3.6vw, 4rem); max-width: 46rem; }
+.closing div > p:last-child { color: var(--about-muted); line-height: 1.7; margin: 1rem 0 0; }
+.closing > a { align-items: center; background: var(--about-ink); color: var(--about-paper); display: inline-flex; flex: 0 0 auto; gap: .7rem; justify-content: center; min-height: 3.2rem; padding: .8rem 1.15rem; text-decoration: none; }
+.closing > a:hover, .closing > a:focus-visible { background: var(--about-gold); color: #201912; }
+.page :is(a, button):focus-visible { outline: 2px solid var(--about-gold); outline-offset: 4px; }
+
+:global(.dark) .page { --about-ink: #f3e9dc; --about-muted: #c2b4a6; --about-ivory: #211a15; --about-paper: #15110e; --about-taupe: #33281f; }
+:global(.dark) .hero { background: linear-gradient(112deg, #211a15 0%, #17120f 61%, #302419 100%); }
+:global(.dark) .portraitImage { background: linear-gradient(135deg, #493826, #241b15); }
+:global(.dark) .portraitCopy, :global(.dark) .philosophy li:hover, :global(.dark) .philosophy li:focus-within, :global(.dark) .services nav a:hover, :global(.dark) .services nav a:focus-visible { background: #2a211a; }
+:global(.dark) .closing > a { background: #f3e9dc; color: #211a15; }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; padding-block-start: 3.3rem; }
+  .heroPortrait { min-height: min(125vw, 38rem); order: -1; }
+  .heroFrame { inset: 4% 5% 5% 12%; }
+  .storyBody { grid-template-columns: 1fr; }
+  .philosophy li { align-items: start; grid-template-columns: 2.6rem minmax(0, 1fr); min-height: 0; padding-block: 1.5rem; }
+  .philosophy li svg { display: none; }
+  .portraitMoment { display: block; padding-inline: 0; }
+  .portraitImage { min-height: 31rem; }
+  .portraitCopy { margin: -2.5rem 1.25rem 0; padding: 2rem; }
+  .uae, .services, .story, .philosophy, .closing { padding-inline: 1.25rem; }
+  .services nav a { grid-template-columns: 2.5rem minmax(0, 1fr); padding-block: .75rem; }
+  .serviceAction { display: none; }
+  .closing { align-items: flex-start; flex-direction: column; }
+  .closing > a { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) { .philosophy li, .philosophy li svg, .services nav a { transition: none; } }

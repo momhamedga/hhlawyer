@@ -1,0 +1,9 @@
+"use client";
+import Link from "next/link";
+import { BarChart3, CalendarDays, ContactRound, LayoutDashboard, Menu, Scale, UsersRound, Wrench } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
+import styles from "./AdminWorkspace.module.css";
+const items=[["/admin",LayoutDashboard,"Overview","نظرة عامة"],["/admin/consultations",CalendarDays,"Matters","الملفات"],["/admin/contacts",ContactRound,"Contacts","التواصل"],["/admin/users",UsersRound,"Users","المستخدمون"],["/admin/services",Wrench,"Services","الخدمات"]] as const;
+export function AdminWorkspace({children}:{children:React.ReactNode}){const locale=useLocale(),path=usePathname(),[open,setOpen]=useState(false),t=(en:string,ar:string)=>locale==="en"?en:ar;if(path.endsWith("/admin/login"))return <>{children}</>;return <div className={styles.workspace}><header className={styles.topbar} data-admin-shell="true"><button aria-expanded={open} aria-label={t("Open workspace navigation","فتح تنقل مساحة العمل")} onClick={()=>setOpen(!open)} type="button"><Menu size={19}/></button><Link href={localizePath("/admin",locale)}><Scale size={21}/><span>H/LAW</span></Link><div><span>{t("Secure workspace","مساحة عمل آمنة")}</span><span className={styles.role}>ADMIN</span></div></header><aside className={`${styles.sidebar} ${open?styles.open:""}`}><p>{t("Operations","العمليات")}</p><nav>{items.map(([href,Icon,en,ar])=><Link className={path===localizePath(href,locale)?styles.active:""} href={localizePath(href,locale)} key={href} onClick={()=>setOpen(false)}><Icon size={18}/><span>{t(en,ar)}</span></Link>)}</nav><footer><BarChart3 size={17}/>{t("Live operational view","عرض تشغيلي مباشر")}</footer></aside><div className={styles.content}>{children}</div></div>;}

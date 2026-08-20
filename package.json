@@ -1,33 +1,35 @@
 {
-  "name": "hussein-alharithi-law",
+  "name": "hhlawyer",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.99.3",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^0.577.0",
-    "next": "16.2.1",
-    "react": "19.2.4",
-    "react-day-picker": "^9.14.0",
-    "react-dom": "19.2.4",
-    "zustand": "^5.0.12"
+    "dev": "pnpm --parallel --filter @hhlawyer/web --filter @hhlawyer/api dev",
+    "dev:web": "pnpm --filter @hhlawyer/web dev",
+    "dev:api": "pnpm --filter @hhlawyer/api dev",
+    "build": "pnpm run build:shared && pnpm run build:web && pnpm run build:api",
+    "build:shared": "pnpm --filter @hhlawyer/types build && pnpm --filter @hhlawyer/validation build && pnpm --filter @hhlawyer/config build && pnpm --filter @hhlawyer/ui build",
+    "build:web": "pnpm --filter @hhlawyer/web build",
+    "build:api": "pnpm --filter @hhlawyer/api build",
+    "lint": "pnpm --filter @hhlawyer/web lint && pnpm --filter @hhlawyer/api lint",
+    "typecheck": "pnpm --filter @hhlawyer/types typecheck && pnpm --filter @hhlawyer/validation typecheck && pnpm --filter @hhlawyer/config typecheck && pnpm --filter @hhlawyer/ui typecheck && pnpm --filter @hhlawyer/web typecheck && pnpm --filter @hhlawyer/api typecheck",
+    "db:generate": "dotenv -e apps/api/.env -- prisma generate --schema prisma/schema.prisma",
+    "db:validate": "dotenv -e apps/api/.env -- prisma validate --schema prisma/schema.prisma",
+    "db:migrate": "dotenv -e apps/api/.env -- prisma migrate dev --schema prisma/schema.prisma",
+    "db:status": "dotenv -e apps/api/.env -- prisma migrate status --schema prisma/schema.prisma",
+    "db:seed": "dotenv -e apps/api/.env -- pnpm --filter @hhlawyer/api exec tsx ../../prisma/seed.ts",
+    "db:check": "pnpm --filter @hhlawyer/api exec tsx src/scripts/check-database.ts",
+    "db:check:test": "pnpm --filter @hhlawyer/api exec tsx src/scripts/check-database.ts --test",
+    "test": "pnpm run test:api",
+    "test:api": "dotenv -e apps/api/.env -- pnpm --filter @hhlawyer/api test",
+    "test:api:integration": "dotenv -e apps/api/.env -- pnpm --filter @hhlawyer/api test:integration",
+    "test:web:e2e": "dotenv -e apps/api/.env -- pnpm --filter @hhlawyer/web test:e2e",
+    "user:create-admin": "dotenv -e apps/api/.env -- pnpm --filter @hhlawyer/api exec tsx src/scripts/create-admin.ts"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "@prisma/client": "6.19.3",
+    "dotenv-cli": "^11.0.0",
+    "prisma": "6.19.3",
+    "tsx": "^4.20.6"
+  },
+  "packageManager": "pnpm@11.12.0"
 }

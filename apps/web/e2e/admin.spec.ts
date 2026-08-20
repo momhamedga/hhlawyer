@@ -1,0 +1,89 @@
+import { randomUUID } from "node:crypto";
+import { expect, test, type Page } from "@playwright/test";
+import { createTestPrismaClient } from "../../api/src/lib/test-database";
+import { hashPassword } from "../../api/src/modules/auth/auth.service";
+
+test.describe.configure({ mode: "serial" });
+
+const db = createTestPrismaClient();
+const marker = `admin-consultation-${randomUUID().slice(0, 8)}`;
+const password = "admin consultation browser password";
+let adminId = "";
+let staffId = "";
+let serviceId = "";
+let consultationId = "";
+let referenceNumber = "";
+
+async function login(page: Page, email: string) {
+  await page.goto("/admin/login");
+  await page.getByLabel("البريد الإلكتروني").fill(email);
+  await page.getByLabel("كلمة المرور").fill(password);
+  const response = page.waitForResponse((value) => value.url().endsWith("/auth/login") && value.request().method() === "POST");
+  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
+  expect((await response).status()).toBe(200);
+  await page.waitForURL(/\/admin$/);
+}
+
+test.beforeAll("create isolated consultation fixtures", async () => {
+  const service = await db.service.create({
+    data: { slug: `${marker}-service`, name: `${marker} Service`, description: "Controlled consultation service.", sortOrder: 999 },
+  });
+  serviceId = service.id;
+
+  const [admin, staff] = await Promise.all((["ADMIN", "STAFF"] as const).map(async (role) => db.user.create({
+    data: { email: `${marker}.${role.toLowerCase()}@example.test`, name: `${marker} ${role}`, passwordHash: await hashPassword(password), role },
+  })));
+  adminId = admin.id;
+  staffId = staff.id;
+
+  referenceNumber = `E2E-${randomUUID().slice(0, 12).toUpperCase()}`;
+  const consultation = await db.consultation.create({
+    data: {
+      referenceNumber,
+      serviceId,
+      name: `${marker} Client`,
+      email: `${marker}@example.test`,
+      phone: "+971501234567",
+      preferredDate: new Date("2099-12-31T12:00:00.000Z"),
+      preferredTime: "09:00 AM",
+      message: "Controlled admin consultation fixture.",
+      status: "PENDING",
+    },
+  });
+  consultationId = consultation.id;
+});
+
+test.afterAll("clean isolated consultation fixtures", async () => {
+  await db.auditLog.deleteMany({ where: { OR: [{ entityId: consultationId }, { userId: { in: [adminId, staffId] } }] } });
+  await db.session.deleteMany({ where: { userId: { in: [adminId, staffId] } } });
+  await db.consultation.deleteMany({ where: { id: consultationId } });
+  await db.service.deleteMany({ where: { id: serviceId } });
+  await db.user.deleteMany({ where: { id: { in: [adminId, staffId] } } });
+  await db.$disconnect();
+});
+
+test("admin consultation list, detail, and status update", async ({ page }) => {
+  await login(page, `${marker}.admin@example.test`);
+  await page.getByRole("link", { name: "الاستشارات" }).click();
+  await expect(page.getByRole("heading", { name: "طلبات الاستشارة" })).toBeVisible();
+  await page.getByLabel("بحث").fill(referenceNumber);
+  await expect(page.getByText(referenceNumber)).toBeVisible();
+  await page.getByText(referenceNumber, { exact: true }).locator("xpath=ancestor::tr").getByRole("link", { name: "عرض الطلب" }).click();
+  await expect(page.getByRole("heading", { name: "بيانات الطلب", level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: "تغيير إلى مؤكد" }).click();
+  await expect(page.getByText("تم تحديث حالة الطلب بنجاح.")).toBeVisible();
+  await expect(page.locator("header").getByText("مؤكد")).toBeVisible();
+  await expect.poll(async () => (await db.consultation.findUnique({ where: { id: consultationId } }))?.status).toBe("CONFIRMED");
+});
+
+test("staff can read a consultation but cannot see status management controls", async ({ page }) => {
+  await login(page, `${marker}.staff@example.test`);
+  await page.goto("/admin/consultations");
+  await page.getByLabel("بحث").fill(referenceNumber);
+  await expect(page.getByText(referenceNumber)).toBeVisible();
+  await page.getByText(referenceNumber, { exact: true }).locator("xpath=ancestor::tr").getByRole("link", { name: "عرض الطلب" }).click();
+  await expect(page.getByText("لديك صلاحية عرض هذا الطلب فقط.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /تغيير إلى|إلغاء الطلب/ })).toHaveCount(0);
+  expect(adminId).not.toBe("");
+  expect(staffId).not.toBe("");
+});

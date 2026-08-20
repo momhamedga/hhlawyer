@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Justice scales">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#241F1A"/>
+  <g fill="none" stroke="#D9AF6C" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+    <path d="M32 13v35M17 22h30M23 48h18"/>
+    <path d="m20 22-7 14m7-14 7 14m-14 0h14"/>
+    <path d="m44 22-7 14m7-14 7 14m-14 0h14"/>
+  </g>
+</svg>

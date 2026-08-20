@@ -1,0 +1,29 @@
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 750ms ease;
+  will-change: opacity;
+}
+
+.active {
+  opacity: 1;
+}
+
+.layer img {
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 30px 35px rgb(0 0 0 / 34%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    transition: none;
+  }
+}

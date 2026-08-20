@@ -1,0 +1,16 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import request from "supertest";
+import { createApp } from "../../app.js";
+import { createIsolatedTestPrismaClient } from "../../lib/test-database.js";
+import { hashPassword } from "./auth.service.js";
+
+const marker=`phase6c1b_${Date.now()}`, password="phase6c1b secure password";
+const db=createIsolatedTestPrismaClient(), app=createApp({database:db}); const ids:string[]=[];
+async function makeAdmin(name:string){const user=await db.user.create({data:{name,email:`${marker}.${name}@example.test`,role:"ADMIN",passwordHash:await hashPassword(password)}});ids.push(user.id);const agent=request.agent(app);expect((await agent.post("/api/v1/auth/login").send({email:user.email,password})).status).toBe(200);return{user,agent};}
+const activeAdmins=()=>db.user.count({where:{role:"ADMIN",isActive:true}});
+beforeAll(async()=>{await db.auditLog.deleteMany();await db.session.deleteMany();await db.user.deleteMany();},30_000);
+afterAll(async()=>{await db.auditLog.deleteMany({where:{entityId:{in:ids}}});await db.session.deleteMany({where:{userId:{in:ids}}});await db.user.deleteMany({where:{id:{in:ids}}});await db.$disconnect();});
+describe("isolated last active ADMIN invariant",()=>{
+ it("rejects sequential demotion and disable of the sole active ADMIN without audit",async()=>{const {user,agent}=await makeAdmin("sole");const demotion=await agent.patch(`/api/v1/admin/users/${user.id}/role`).set("Origin","http://localhost:3000").send({role:"STAFF"});expect(demotion.status).toBe(409);expect(demotion.body.error.code).toBe("LAST_ADMIN_PROTECTED");const disable=await agent.patch(`/api/v1/admin/users/${user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false});expect(disable.status).toBe(409);expect(disable.body.error.code).toBe("LAST_ADMIN_PROTECTED");expect(await activeAdmins()).toBe(1);expect((await db.user.findUnique({where:{id:user.id}}))?.role).toBe("ADMIN");expect((await db.user.findUnique({where:{id:user.id}}))?.isActive).toBe(true);expect(await db.auditLog.count({where:{entityId:user.id,action:{in:["USER_ROLE_CHANGED","USER_DISABLED"]}}})).toBe(0);});
+ it("preserves at least one ADMIN under real concurrent disable requests",async()=>{await db.auditLog.deleteMany();await db.session.deleteMany();await db.user.deleteMany();ids.length=0;const a=await makeAdmin("a"),b=await makeAdmin("b");const outcomes=await Promise.allSettled([a.agent.patch(`/api/v1/admin/users/${b.user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false}),b.agent.patch(`/api/v1/admin/users/${a.user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false})]);const responses=outcomes.filter((x):x is PromiseFulfilledResult<request.Response>=>x.status==="fulfilled").map(x=>x.value);expect(await activeAdmins()).toBeGreaterThanOrEqual(1);expect(responses.filter(r=>r.status===200)).toHaveLength(1);expect(responses.some(r=>r.status===409)).toBe(true);const success=responses.find(r=>r.status===200)!;const changedId=success.body.data.id;expect(await db.session.count({where:{userId:changedId,revokedAt:null}})).toBe(0);expect(await db.auditLog.count({where:{entityId:changedId,action:"USER_DISABLED"}})).toBe(1);expect(await db.auditLog.count({where:{entityId:{in:[a.user.id,b.user.id]},action:"USER_DISABLED"}})).toBe(1);});
+});
