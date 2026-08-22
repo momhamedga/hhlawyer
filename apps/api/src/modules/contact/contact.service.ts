@@ -4,9 +4,9 @@ import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../middleware/error-handler.js";
 import { createEmailNotifier, logNotificationFailure } from "../../services/email/email.service.js";
-import type { EmailNotifier } from "../../services/email/email.types.js";
+import type { EmailLocale, EmailNotifier } from "../../services/email/email.types.js";
 
-export async function createContactMessage(input: ContactSubmission, requestId?: string, database: PrismaClient = prisma, notifier: EmailNotifier = createEmailNotifier()) {
+export async function createContactMessage(input: ContactSubmission, requestId?: string, database: PrismaClient = prisma, notifier: EmailNotifier = createEmailNotifier(), locale: EmailLocale = "en") {
   if (input.website) throw new AppError(400, "SPAM_DETECTED", "Unable to submit the message.");
   let contact;
   try {
@@ -19,7 +19,7 @@ export async function createContactMessage(input: ContactSubmission, requestId?:
   }
 
   try {
-    await notifier.sendContactNotification({ name: input.name, email: input.email, subject: input.subject, message: input.message, receivedAt: contact.createdAt });
+    await notifier.sendContactNotification({ name: input.name, email: input.email, subject: input.subject, message: input.message, receivedAt: contact.createdAt, locale });
   } catch {
     logNotificationFailure(requestId, notifier.provider, "contact");
   }

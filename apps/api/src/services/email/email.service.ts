@@ -1,38 +1,32 @@
 import { env } from "../../config/env.js";
 import type { ConsultationNotification, ContactNotification, EmailNotifier } from "./email.types.js";
+import { buildConsultationEmail, buildContactEmail, type EmailTemplate } from "./email.templates.js";
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
-}
-
-class DisabledEmailNotifier implements EmailNotifier {
+export class DisabledEmailNotifier implements EmailNotifier {
   readonly provider = "disabled";
   async sendContactNotification(_notification: ContactNotification) {}
   async sendConsultationNotification(_notification: ConsultationNotification) {}
 }
 
-class ResendEmailNotifier implements EmailNotifier {
+export class ResendEmailNotifier implements EmailNotifier {
   readonly provider = "resend";
   constructor(private readonly apiKey: string, private readonly from: string, private readonly to: string) {}
 
-  private async send(subject: string, text: string, html: string) {
+  private async send(template: EmailTemplate) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: this.from, to: [this.to], subject, text, html }),
+      body: JSON.stringify({ from: this.from, to: [this.to], subject: template.subject, text: template.text, html: template.html, reply_to: template.replyTo }),
     });
     if (!response.ok) throw new Error("EMAIL_PROVIDER_REQUEST_FAILED");
   }
 
   async sendContactNotification(notification: ContactNotification) {
-    const text = `New contact message\nName: ${notification.name}\nEmail: ${notification.email}\nSubject: ${notification.subject}\nReceived: ${notification.receivedAt.toISOString()}\n\n${notification.message}`;
-    const html = `<h1>New contact message</h1><p><strong>Name:</strong> ${escapeHtml(notification.name)}</p><p><strong>Email:</strong> ${escapeHtml(notification.email)}</p><p><strong>Subject:</strong> ${escapeHtml(notification.subject)}</p><p><strong>Received:</strong> ${notification.receivedAt.toISOString()}</p><pre>${escapeHtml(notification.message)}</pre>`;
-    await this.send(`Contact: ${notification.subject}`, text, html);
+    await this.send(buildContactEmail(notification));
   }
 
   async sendConsultationNotification(notification: ConsultationNotification) {
-    const text = `New consultation ${notification.referenceNumber}\nService: ${notification.serviceId}\nPreferred: ${notification.preferredDate.toISOString()} ${notification.preferredTime}`;
-    await this.send(`Consultation: ${notification.referenceNumber}`, text, `<p>${escapeHtml(text)}</p>`);
+    await this.send(buildConsultationEmail(notification));
   }
 }
 

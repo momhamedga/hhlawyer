@@ -6,6 +6,7 @@ import { AppError } from "../../middleware/error-handler.js";
 import { createConsultation } from "./consultations.service.js";
 import type { PrismaClientLike } from "./consultations.service.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
+import { resolveEmailLocale } from "../../services/email/email.locale.js";
 
 function validationFields(error: ZodError) {
   const fields: Record<string, string[]> = {};
@@ -26,7 +27,7 @@ export function createPostConsultation(database?: PrismaClientLike, notifier?: E
     }
 
     try {
-      const consultation = await createConsultation(parsed.data, new Date(), database, notifier, request.requestId);
+      const consultation = await createConsultation(parsed.data, new Date(), database, notifier, request.requestId, resolveEmailLocale(request.get("accept-language")));
       const body: ApiSuccess<ConsultationCreated> = {
         success: true,
         data: {

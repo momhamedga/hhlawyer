@@ -3,15 +3,17 @@ import request from "supertest";
 import { createApp } from "../../app.js";
 import { createTestPrismaClient } from "../../lib/test-database.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
+import type { ConsultationNotification, ContactNotification } from "../../services/email/email.types.js";
 import { createConsultation } from "../consultations/consultations.service.js";
 
 const marker = `PHASE4_TEST_${Date.now()}`;
 const database = createTestPrismaClient();
-const notifications: string[] = [];
+const contactNotifications: ContactNotification[] = [];
+const consultationNotifications: ConsultationNotification[] = [];
 const notifier: EmailNotifier = {
   provider: "mock",
-  async sendContactNotification(message) { notifications.push(message.subject); },
-  async sendConsultationNotification(message) { notifications.push(message.referenceNumber); },
+  async sendContactNotification(message) { contactNotifications.push(message); },
+  async sendConsultationNotification(message) { consultationNotifications.push(message); },
 };
 const app = createApp({ database, notifier, contactRateLimit: 100, consultationRateLimit: 100 });
 const rateApp = createApp({ database, notifier, contactRateLimit: 5 });
@@ -29,7 +31,20 @@ describe("contact API", () => {
     expect(response.status).toBe(201); expect(response.body).toMatchObject({ success: true, data: { status: "received" } });
     expect(response.body.data).not.toHaveProperty("id"); expect(response.body.data).not.toHaveProperty("message"); expect(response.body.data).not.toHaveProperty("email");
     expect(await database.contactMessage.findFirst({ where: { name: input.name } })).toMatchObject({ status: "UNREAD", subject: input.subject });
-    expect(notifications).toContain(input.subject);
+    expect(contactNotifications).toContainEqual(expect.objectContaining({ subject: input.subject, locale: "en" }));
+  });
+
+  it("uses the accepted locale as internal email presentation context without changing either API response", async () => {
+    const contact = payload("arabic_email");
+    const contactResponse = await request(app).post("/api/v1/contact").set("Accept-Language", "ar-AE,ar;q=0.9").send(contact);
+    expect(contactResponse.status).toBe(201);
+    expect(contactResponse.body).toMatchObject({ success: true, data: { status: "received" } });
+    expect(contactNotifications.at(-1)).toMatchObject({ name: contact.name, locale: "ar" });
+
+    const consultationResponse = await request(app).post("/api/v1/consultations").set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: "2099-12-31", preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
+    expect(consultationResponse.status).toBe(201);
+    expect(consultationResponse.body).toMatchObject({ success: true, data: { status: "PENDING" } });
+    expect(consultationNotifications.at(-1)).toMatchObject({ locale: "ar", serviceSlug: expect.any(String), serviceName: expect.any(String) });
   });
 
   it.each([["name", { name: "x" }], ["email", { email: "bad" }], ["subject", { subject: "x" }], ["short message", { message: "short" }], ["oversized message", { message: "x".repeat(5_001) }], ["status", { status: "READ" }], ["unknown field", { id: "x" }]])("rejects invalid %s", async (_label, invalid) => {

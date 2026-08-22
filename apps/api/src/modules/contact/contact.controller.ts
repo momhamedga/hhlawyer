@@ -5,6 +5,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { ZodError } from "zod";
 import { AppError } from "../../middleware/error-handler.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
+import { resolveEmailLocale } from "../../services/email/email.locale.js";
 import { createContactMessage } from "./contact.service.js";
 
 function fields(error: ZodError) {
@@ -18,7 +19,7 @@ export function createPostContact(database?: PrismaClient, notifier?: EmailNotif
     const parsed = contactSubmissionSchema.safeParse(request.body);
     if (!parsed.success) { next(new AppError(400, "VALIDATION_ERROR", "Please correct the highlighted fields.", fields(parsed.error))); return; }
     try {
-      const contact = await createContactMessage(parsed.data, request.requestId, database, notifier);
+      const contact = await createContactMessage(parsed.data, request.requestId, database, notifier, resolveEmailLocale(request.get("accept-language")));
       const body: ApiSuccess<ContactMessageCreated> = { success: true, data: { status: "received", createdAt: contact.createdAt.toISOString() } };
       response.status(201).json(body);
     } catch (error) { next(error); }

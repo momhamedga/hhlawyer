@@ -5,7 +5,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../middleware/error-handler.js";
 import { createEmailNotifier, logNotificationFailure } from "../../services/email/email.service.js";
-import type { EmailNotifier } from "../../services/email/email.types.js";
+import type { EmailLocale, EmailNotifier } from "../../services/email/email.types.js";
 
 type TransactionClient = Prisma.TransactionClient;
 
@@ -49,7 +49,7 @@ async function nextSequence(transaction: TransactionClient, year: number) {
   return sequence;
 }
 
-export async function createConsultation(input: ConsultationSubmission, now = new Date(), database: PrismaClientLike = prisma, notifier: EmailNotifier = createEmailNotifier(), requestId?: string) {
+export async function createConsultation(input: ConsultationSubmission, now = new Date(), database: PrismaClientLike = prisma, notifier: EmailNotifier = createEmailNotifier(), requestId?: string, locale: EmailLocale = "en") {
   if (input.website) {
     throw new AppError(400, "SPAM_DETECTED", "Unable to submit the consultation request.");
   }
@@ -65,7 +65,7 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
     const consultation = await database.$transaction(async (transaction) => {
       const service = await transaction.service.findUnique({
         where: { id: input.serviceId },
-        select: { isActive: true },
+        select: { isActive: true, slug: true, name: true },
       });
       if (!service || !service.isActive) {
         throw new AppError(404, "SERVICE_NOT_FOUND", "The selected service is not available.");
@@ -86,14 +86,14 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
         },
         select: { referenceNumber: true, status: true, createdAt: true, preferredDate: true },
       });
-      return consultation;
+      return { consultation, service };
     }, { timeout: consultationTransactionTimeoutMs });
     try {
-      await notifier.sendConsultationNotification({ referenceNumber: consultation.referenceNumber, serviceId: input.serviceId, preferredDate: consultation.preferredDate, preferredTime: input.preferredTime, receivedAt: consultation.createdAt });
+      await notifier.sendConsultationNotification({ referenceNumber: consultation.consultation.referenceNumber, serviceSlug: consultation.service.slug, serviceName: consultation.service.name, name: input.name, email: input.email, phone: input.phone, preferredDate: consultation.consultation.preferredDate, preferredTime: input.preferredTime, receivedAt: consultation.consultation.createdAt, message: input.message, locale });
     } catch {
       logNotificationFailure(requestId, notifier.provider, "consultation");
     }
-    return consultation;
+    return consultation.consultation;
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
