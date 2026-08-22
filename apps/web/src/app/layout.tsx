@@ -54,7 +54,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const localeHeader = (await headers()).get("x-hhlawyer-locale");
+  const requestHeaders = await headers();
+  const localeHeader = requestHeaders.get("x-hhlawyer-locale");
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
   const locale = localeHeader && isLocale(localeHeader) ? localeHeader : DEFAULT_LOCALE;
   const { dir, fontClass } = localeAttributes[locale];
   return (
@@ -68,7 +70,7 @@ export default async function RootLayout({
       <body className="bg-background text-foreground antialiased min-h-screen flex flex-col overflow-x-hidden">
 
         {/* الخلفية الحية */}
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
         <LocaleProvider>
         <QueryProvider>
           <AnimatedBackground />

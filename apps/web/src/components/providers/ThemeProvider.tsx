@@ -22,7 +22,7 @@ function ThemeColorSync() {
   return null;
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
   return (
     <NextThemesProvider
       attribute="class"
@@ -30,6 +30,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
       enableSystem
+      nonce={nonce}
       storageKey="hhlawyer-theme"
     >
       <ThemeColorSync />

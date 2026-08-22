@@ -12,6 +12,17 @@ import { requestId } from "./middleware/request-id.js";
 import { apiPrefix, createApiRouter } from "./routes/index.js";
 import type { EmailNotifier } from "./services/email/email.types.js";
 
+const permissionsPolicy = [
+  "accelerometer=()",
+  "camera=()",
+  "geolocation=()",
+  "gyroscope=()",
+  "magnetometer=()",
+  "microphone=()",
+  "payment=()",
+  "usb=()",
+].join(", ");
+
 interface AppOptions {
   database?: PrismaClient;
   consultationRateLimit?: number;
@@ -29,6 +40,10 @@ export function createApp(options: AppOptions = {}): Express {
   app.disable("x-powered-by");
   app.use(requestId);
   app.use(helmet());
+  app.use((_request, response, next) => {
+    response.setHeader("Permissions-Policy", permissionsPolicy);
+    next();
+  });
   app.use(compression());
   app.use(
   cors({

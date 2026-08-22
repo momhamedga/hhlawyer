@@ -26,7 +26,12 @@ async function expectMobilePanelFits(page: Page) {
   await expect(dialog.locator("nav a")).toHaveCount(6);
   await expect(dialog.locator('a[href^="tel:"]')).toBeVisible();
   await expect(dialog.locator('a[href^="mailto:"]')).toBeVisible();
-  await expect(dialog.getByTestId("mobile-theme-trigger")).toBeVisible();
+  await expect(dialog.getByTestId("mobile-theme-inline")).toBeVisible();
+  await expect(dialog.getByTestId("mobile-theme-trigger")).toHaveCount(0);
+  await expect(dialog.getByTestId(/mobile-theme-option-/)).toHaveCount(3);
+  for (const option of await dialog.getByTestId(/mobile-theme-option-/).all()) {
+    expect(await option.evaluate((element) => element.getBoundingClientRect().height >= 44)).toBe(true);
+  }
 }
 
 test("mobile menu Link navigation completes for every Arabic and English public destination", async ({ page }) => {
@@ -53,21 +58,69 @@ test("mobile menu Link navigation completes for every Arabic and English public 
   }
 });
 
-test("mobile menu preserves close, focus, theme, and viewport behavior", async ({ page }) => {
-  for (const [locale, theme] of [["ar", "light"], ["ar", "dark"], ["en", "light"], ["en", "dark"]] as const) {
+test("mobile menu keeps the inline theme selector accessible, persistent, and within the viewport", async ({ page }) => {
+  const runtimeErrors: string[] = [];
+  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") runtimeErrors.push(message.text()); });
+
+  for (const locale of ["ar", "en"] as const) {
     for (const width of mobileWidths) {
       await page.setViewportSize({ width, height: 844 });
+      await page.emulateMedia({ colorScheme: "dark" });
       await page.goto(`/${locale}`);
-      const { dialog, trigger } = await openMobileMenu(page);
-      await page.getByTestId("mobile-theme-trigger").click();
-      await page.getByTestId(`mobile-theme-option-${theme}`).click();
-      await expect(page.locator("html")).toHaveClass(new RegExp(theme));
+      const { dialog } = await openMobileMenu(page);
+      await expect(dialog.getByText(locale === "ar" ? "المظهر" : "Appearance", { exact: true })).toBeVisible();
+      await expectMobilePanelFits(page);
+
+      const light = dialog.getByTestId("mobile-theme-option-light");
+      await light.focus();
+      await page.keyboard.press("Enter");
+      await expect(light).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("html")).not.toHaveClass(/dark/);
+      await expect.poll(() => page.evaluate(() => localStorage.getItem("hhlawyer-theme"))).toBe("light");
+      await expect(dialog).toBeVisible();
+      await expect(light).toBeFocused();
+
+      const dark = dialog.getByTestId("mobile-theme-option-dark");
+      await dark.click();
+      await expect(dark).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("html")).toHaveClass(/dark/);
+
+      const system = dialog.getByTestId("mobile-theme-option-system");
+      await system.click();
+      await expect(system).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("html")).toHaveClass(/dark/);
+      await expect.poll(() => page.evaluate(() => localStorage.getItem("hhlawyer-theme"))).toBe("system");
+      await page.emulateMedia({ colorScheme: "light" });
+      await expect(page.locator("html")).not.toHaveClass(/dark/);
       await expect(dialog).toHaveAttribute("dir", locale === "ar" ? "rtl" : "ltr");
       await expectMobilePanelFits(page);
+      await page.reload();
+      await expect(page.locator("html")).not.toHaveClass(/dark/);
+      const reloaded = await openMobileMenu(page);
+      await expect(reloaded.dialog).toHaveAttribute("dir", locale === "ar" ? "rtl" : "ltr");
+      await expectMobilePanelFits(page);
       await page.keyboard.press("Escape");
-      await expect(dialog).toBeHidden();
-      await expect(trigger).toBeFocused();
+      await expect(reloaded.dialog).toBeHidden();
+      await expect(reloaded.trigger).toBeFocused();
     }
+  }
+
+  expect(runtimeErrors).toEqual([]);
+});
+
+test("mobile inline theme selector supports touch without closing the navigation dialog", async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  try {
+    await page.goto("/ar");
+    const { dialog } = await openMobileMenu(page);
+    await dialog.getByTestId("mobile-theme-option-dark").tap();
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(dialog).toBeVisible();
+    await expectMobilePanelFits(page);
+  } finally {
+    await context.close();
   }
 });
 

@@ -14,9 +14,9 @@ const optionDefinitions = [
   { value: "system", label: "system", icon: Monitor },
 ] as const;
 
-type ThemeToggleProps = { className?: string; id?: string };
+type ThemeToggleProps = { className?: string; id?: string; variant?: "popover" | "inline" };
 
-export function ThemeToggle({ className, id = "theme" }: ThemeToggleProps) {
+export function ThemeToggle({ className, id = "theme", variant = "popover" }: ThemeToggleProps) {
   const locale = useLocale();
   const labels = messages[locale].theme;
   const { resolvedTheme, setTheme, theme } = useTheme();
@@ -25,6 +25,8 @@ export function ThemeToggle({ className, id = "theme" }: ThemeToggleProps) {
   const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
 
   useEffect(() => {
+    if (variant === "inline") return;
+
     function onPointerDown(event: PointerEvent) {
       if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
     }
@@ -37,9 +39,21 @@ export function ThemeToggle({ className, id = "theme" }: ThemeToggleProps) {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, []);
+  }, [variant]);
 
-  if (!mounted) return <div aria-hidden="true" className={cn("size-10", className)} />;
+  if (!mounted) return <div aria-hidden="true" className={cn(variant === "inline" ? "min-h-32 w-full" : "size-10", className)} />;
+
+  if (variant === "inline") {
+    return <section aria-labelledby={`${id}-label`} className={cn("w-full", className)} data-testid={`${id}-inline`}>
+      <p className="mb-2 text-sm font-extrabold text-foreground" id={`${id}-label`}>{locale === "ar" ? "المظهر" : "Appearance"}</p>
+      <div aria-labelledby={`${id}-label`} className="grid grid-cols-3 gap-2" role="group">
+        {optionDefinitions.map(({ value, label, icon: Icon }) => {
+          const active = theme === value;
+          return <button aria-pressed={active} className={cn("relative inline-flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 rounded-ds-sm border px-1.5 text-center text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background", active ? "border-accent bg-secondary text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent hover:text-foreground")} data-testid={`${id}-option-${value}`} key={value} onClick={() => setTheme(value)} type="button"><Icon aria-hidden="true" size={16} /><span className="truncate">{labels[label]}</span>{active ? <Check aria-label={labels[label]} className="absolute end-1 top-1 text-accent" size={12} strokeWidth={3} /> : null}</button>;
+        })}
+      </div>
+    </section>;
+  }
 
   const CurrentIcon = resolvedTheme === "dark" ? Moon : Sun;
   return <div className={cn("relative inline-flex", className)} ref={menuRef}>

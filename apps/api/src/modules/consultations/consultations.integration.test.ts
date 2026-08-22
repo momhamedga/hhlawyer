@@ -45,6 +45,12 @@ describe("consultation booking API", () => {
     const response = await request(app).get("/api/v1/health");
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+    expect(response.headers["permissions-policy"]).toBe("accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
+    expect(response.headers["content-security-policy"]).toBeDefined();
+    expect(response.headers["strict-transport-security"]).toBeDefined();
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers["x-frame-options"]).toBe("SAMEORIGIN");
+    expect(response.headers["referrer-policy"]).toBe("no-referrer");
   });
 
   it("creates a pending consultation with a private response", async () => {

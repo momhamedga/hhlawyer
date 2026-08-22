@@ -44,7 +44,7 @@ export function Header() {
             <div className={styles.mobileBrand}><BrandLogo priority variant="mobile" /></div>
             <nav aria-label={translated("Mobile navigation", "تنقل الهاتف")} className={styles.mobileNav}>{items.map((item, index) => <Link className={active(item.href) ? styles.active : undefined} href={localizePath(item.href, locale)} key={item.href} onNavigate={() => setOpen(false)}><span>0{index + 1}</span>{item.label}<ArrowUpRight size={17} /></Link>)}</nav>
             <Link className={styles.mobileCta} href={consultationHref} onNavigate={() => setOpen(false)}>{translated("Arrange a consultation", "رتّب استشارة")}<ArrowUpRight size={18} /></Link>
-            <div className={styles.mobileUtilities}><Suspense fallback={null}><LanguageSwitcher className={styles.language} /></Suspense><ThemeToggle className={styles.theme} id="mobile-theme" /></div>
+            <div className={`${styles.mobileUtilities} !grid !gap-4`}><Suspense fallback={null}><LanguageSwitcher className={styles.language} /></Suspense><ThemeToggle className="w-full" id="mobile-theme" variant="inline" /></div>
             <div className={styles.mobileContact}><a href="tel:+971502001797"><Phone size={16}/><bdi>0502001797</bdi></a><a href="mailto:info@hussein.ae"><Mail size={16}/>info@hussein.ae</a></div>
           </DialogContent>
         </Dialog>
