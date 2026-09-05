@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import type { DatabaseErrorDiagnostic } from "../lib/database-error.js";
 
 export class AppError extends Error {
   constructor(
@@ -6,6 +7,7 @@ export class AppError extends Error {
     public readonly code: string,
     message: string,
     public readonly fields?: Record<string, string[]>,
+    public readonly databaseDiagnostic?: DatabaseErrorDiagnostic,
   ) {
     super(message);
     this.name = "AppError";
@@ -25,7 +27,15 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
   const message = appError?.message ?? "An unexpected error occurred.";
 
   if (statusCode >= 500) {
-    console.error({ requestId: request.requestId, code });
+    if (appError?.databaseDiagnostic) {
+      console.error({
+        requestId: request.requestId,
+        publicCode: code,
+        ...appError.databaseDiagnostic,
+      });
+    } else {
+      console.error({ requestId: request.requestId, code });
+    }
   }
 
   response.status(statusCode).json({

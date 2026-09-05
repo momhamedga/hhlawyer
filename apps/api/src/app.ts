@@ -5,7 +5,7 @@ import type { Express } from "express";
 import type { PrismaClient } from "@prisma/client";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import { env } from "./config/env.js";
+import { env, isAllowedWebOrigin } from "./config/env.js";
 import { AppError, errorHandler } from "./middleware/error-handler.js";
 import { notFound } from "./middleware/not-found.js";
 import { requestId } from "./middleware/request-id.js";
@@ -48,7 +48,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || origin === env.WEB_ORIGIN) {
+      if (!origin || isAllowedWebOrigin(origin)) {
         callback(null, true);
         return;
       }

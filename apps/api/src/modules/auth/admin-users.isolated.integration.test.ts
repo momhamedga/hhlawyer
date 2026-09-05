@@ -12,5 +12,36 @@ beforeAll(async()=>{await db.auditLog.deleteMany();await db.session.deleteMany()
 afterAll(async()=>{await db.auditLog.deleteMany({where:{entityId:{in:ids}}});await db.session.deleteMany({where:{userId:{in:ids}}});await db.user.deleteMany({where:{id:{in:ids}}});await db.$disconnect();});
 describe("isolated last active ADMIN invariant",()=>{
  it("rejects sequential demotion and disable of the sole active ADMIN without audit",async()=>{const {user,agent}=await makeAdmin("sole");const demotion=await agent.patch(`/api/v1/admin/users/${user.id}/role`).set("Origin","http://localhost:3000").send({role:"STAFF"});expect(demotion.status).toBe(409);expect(demotion.body.error.code).toBe("LAST_ADMIN_PROTECTED");const disable=await agent.patch(`/api/v1/admin/users/${user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false});expect(disable.status).toBe(409);expect(disable.body.error.code).toBe("LAST_ADMIN_PROTECTED");expect(await activeAdmins()).toBe(1);expect((await db.user.findUnique({where:{id:user.id}}))?.role).toBe("ADMIN");expect((await db.user.findUnique({where:{id:user.id}}))?.isActive).toBe(true);expect(await db.auditLog.count({where:{entityId:user.id,action:{in:["USER_ROLE_CHANGED","USER_DISABLED"]}}})).toBe(0);});
- it("preserves at least one ADMIN under real concurrent disable requests",async()=>{await db.auditLog.deleteMany();await db.session.deleteMany();await db.user.deleteMany();ids.length=0;const a=await makeAdmin("a"),b=await makeAdmin("b");const outcomes=await Promise.allSettled([a.agent.patch(`/api/v1/admin/users/${b.user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false}),b.agent.patch(`/api/v1/admin/users/${a.user.id}/status`).set("Origin","http://localhost:3000").send({isActive:false})]);const responses=outcomes.filter((x):x is PromiseFulfilledResult<request.Response>=>x.status==="fulfilled").map(x=>x.value);expect(await activeAdmins()).toBeGreaterThanOrEqual(1);expect(responses.filter(r=>r.status===200)).toHaveLength(1);expect(responses.some(r=>r.status===409)).toBe(true);const success=responses.find(r=>r.status===200)!;const changedId=success.body.data.id;expect(await db.session.count({where:{userId:changedId,revokedAt:null}})).toBe(0);expect(await db.auditLog.count({where:{entityId:changedId,action:"USER_DISABLED"}})).toBe(1);expect(await db.auditLog.count({where:{entityId:{in:[a.user.id,b.user.id]},action:"USER_DISABLED"}})).toBe(1);});
+ it("preserves at least one ADMIN under real concurrent disable requests", async () => {
+   await db.auditLog.deleteMany();
+   await db.session.deleteMany();
+   await db.user.deleteMany();
+   ids.length = 0;
+   const a = await makeAdmin("a"), b = await makeAdmin("b");
+   const outcomes = await Promise.allSettled([
+     a.agent.patch(`/api/v1/admin/users/${b.user.id}/status`).set("Origin", "http://localhost:3000").send({ isActive: false }),
+     b.agent.patch(`/api/v1/admin/users/${a.user.id}/status`).set("Origin", "http://localhost:3000").send({ isActive: false }),
+   ]);
+   const responses = outcomes.filter((x): x is PromiseFulfilledResult<request.Response> => x.status === "fulfilled").map(x => x.value);
+   expect(await activeAdmins()).toBeGreaterThanOrEqual(1);
+   expect(responses).toHaveLength(2);
+   expect(responses.filter(r => r.status === 200)).toHaveLength(1);
+   const success = responses.find(r => r.status === 200)!;
+   const changedId = success.body.data.id;
+   const losingIndex = responses.findIndex(r => r.status !== 200);
+   const denied = responses[losingIndex];
+   // Concurrent deactivation can fail active-user authentication before the
+   // Serializable transaction; admitted requests still require the 409 guard.
+   expect([
+     { status: 409, code: "LAST_ADMIN_PROTECTED" },
+     { status: 401, code: "UNAUTHORIZED" },
+   ]).toContainEqual({ status: denied.status, code: denied.body.error?.code });
+   if (denied.status === 401) {
+     expect([a, b][losingIndex].user.id).toBe(changedId);
+     expect((await db.user.findUnique({ where: { id: changedId }, select: { isActive: true } }))?.isActive).toBe(false);
+   }
+   expect(await db.session.count({ where: { userId: changedId, revokedAt: null } })).toBe(0);
+   expect(await db.auditLog.count({ where: { entityId: changedId, action: "USER_DISABLED" } })).toBe(1);
+   expect(await db.auditLog.count({ where: { entityId: { in: [a.user.id, b.user.id] }, action: "USER_DISABLED" } })).toBe(1);
+ });
 });

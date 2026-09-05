@@ -2,6 +2,7 @@ import type { ConsultationSubmission } from "@hhlawyer/types";
 import { ConsultationStatus, Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import { env } from "../../config/env.js";
+import { createDatabaseErrorDiagnostic } from "../../lib/database-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../middleware/error-handler.js";
 import { createEmailNotifier, logNotificationFailure } from "../../services/email/email.service.js";
@@ -44,7 +45,13 @@ async function nextSequence(transaction: TransactionClient, year: number) {
 
   const sequence = result[0]?.lastValue;
   if (!sequence) {
-    throw new AppError(500, "DATABASE_ERROR", "Unable to create the consultation request.");
+    throw new AppError(
+      500,
+      "DATABASE_ERROR",
+      "Unable to create the consultation request.",
+      undefined,
+      createDatabaseErrorDiagnostic(undefined, "consultation.create"),
+    );
   }
   return sequence;
 }
@@ -98,7 +105,13 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError(500, "DATABASE_ERROR", "Unable to create the consultation request.");
+    throw new AppError(
+      500,
+      "DATABASE_ERROR",
+      "Unable to create the consultation request.",
+      undefined,
+      createDatabaseErrorDiagnostic(error, "consultation.create"),
+    );
   }
 }
 

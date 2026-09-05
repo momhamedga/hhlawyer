@@ -1,11 +1,53 @@
 import "dotenv/config";
 import { z } from "zod";
 
+export function parseWebOrigins(value: string) {
+  const values = value.split(",").map((origin) => origin.trim());
+
+  if (values.length === 0 || values.some((origin) => origin.length === 0)) {
+    throw new Error("WEB_ORIGIN_INVALID");
+  }
+
+  const origins = values.map((value) => {
+    let origin: URL;
+
+    try {
+      origin = new URL(value);
+    } catch {
+      throw new Error("WEB_ORIGIN_INVALID");
+    }
+
+    if (
+      (origin.protocol !== "http:" && origin.protocol !== "https:")
+      || origin.username
+      || origin.password
+      || origin.pathname !== "/"
+      || origin.search
+      || origin.hash
+    ) {
+      throw new Error("WEB_ORIGIN_INVALID");
+    }
+
+    return origin.origin;
+  });
+
+  return [...new Set(origins)];
+}
+
+const webOriginsSchema = z.string().min(1).default("http://localhost:3000").transform((value, context) => {
+  try {
+    return parseWebOrigins(value);
+  } catch {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "WEB_ORIGIN must be a comma-separated list of valid HTTP(S) origins." });
+    return z.NEVER;
+  }
+});
+
 const environmentSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
-    WEB_ORIGIN: z.url().default("http://localhost:3000"),
+    WEB_ORIGIN: webOriginsSchema,
     TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
     EMAIL_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
     EMAIL_PROVIDER: z.enum(["resend"]).optional(),
@@ -49,6 +91,10 @@ if (!parsedEnvironment.success) {
 }
 
 export const env = parsedEnvironment.data;
+
+export function isAllowedWebOrigin(origin: string) {
+  return env.WEB_ORIGIN.includes(origin);
+}
 
 export function requireDatabaseUrl() {
   if (!env.DATABASE_URL) {
