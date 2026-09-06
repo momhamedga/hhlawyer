@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const publicRoutes = ["/ar", "/en", "/ar/services", "/en/services", "/ar/consultation", "/en/consultation", "/ar/contact", "/en/contact"] as const;
-const railwayApiOrigin = "https://hhlawyerapi-production-3634.up.railway.app";
+const productionApiOrigin = "https://api.hhlawyer.ae";
 
 test("public pages enforce compatible security headers and retain essential browser behavior", async ({ page }) => {
   const errors: string[] = [];
@@ -30,7 +30,7 @@ test("public pages enforce compatible security headers and retain essential brow
     expect(csp).toContain("style-src-attr 'unsafe-inline'");
     expect(csp).toContain("img-src 'self' blob: data:");
     expect(csp).toContain("font-src 'self'");
-    expect(csp).toContain(`connect-src 'self' ${railwayApiOrigin}`);
+    expect(csp).toContain(`connect-src 'self' ${productionApiOrigin}`);
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("form-action 'self'");

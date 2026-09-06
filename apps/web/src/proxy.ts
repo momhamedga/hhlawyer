@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { DEFAULT_LOCALE, isLocale, SUPPORTED_LOCALES } from "@/i18n/locale";
 
-const railwayApiOrigin = "https://hhlawyerapi-production-3634.up.railway.app";
+const productionApiOrigin = "https://api.hhlawyer.ae";
 const nextThemesTransitionStyleHash = "'sha256-nzTgYzXYDNe6BAHiiI7NNlfK8n/auuOAhh2t92YvuXo='";
 
 function createContentSecurityPolicy(nonce: string, hostname: string) {
@@ -15,7 +15,7 @@ function createContentSecurityPolicy(nonce: string, hostname: string) {
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
-    `connect-src 'self' ${railwayApiOrigin}${isDevelopment ? " http://localhost:4000" : ""}`,
+    `connect-src 'self' ${productionApiOrigin}${isDevelopment ? " http://localhost:4000" : ""}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
