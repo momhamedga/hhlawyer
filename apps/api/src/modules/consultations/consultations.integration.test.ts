@@ -51,6 +51,7 @@ describe("consultation booking API", () => {
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
     expect(response.headers["x-frame-options"]).toBe("SAMEORIGIN");
     expect(response.headers["referrer-policy"]).toBe("no-referrer");
+    expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
   });
 
   it("creates a pending consultation with a private response", async () => {
@@ -64,6 +65,7 @@ describe("consultation booking API", () => {
     expect(response.body.data).not.toHaveProperty("email");
     expect(response.body.data).not.toHaveProperty("phone");
     expect(response.body.data).not.toHaveProperty("message");
+    expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
     const record = await testDatabase.consultation.findUnique({ where: { referenceNumber: response.body.data.referenceNumber } });
     expect(record).toMatchObject({ serviceId, status: "PENDING", name: payload.name });
     expect(record?.preferredDate.toISOString()).toMatch(/^2099-12-31T12:00:00\.000Z$/);

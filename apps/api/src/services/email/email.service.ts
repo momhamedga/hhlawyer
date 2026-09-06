@@ -10,13 +10,13 @@ export class DisabledEmailNotifier implements EmailNotifier {
 
 export class ResendEmailNotifier implements EmailNotifier {
   readonly provider = "resend";
-  constructor(private readonly apiKey: string, private readonly from: string, private readonly to: string) {}
+  constructor(private readonly apiKey: string, private readonly from: string, private readonly to: readonly string[]) {}
 
   private async send(template: EmailTemplate) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: this.from, to: [this.to], subject: template.subject, text: template.text, html: template.html, reply_to: template.replyTo }),
+      body: JSON.stringify({ from: this.from, to: this.to, subject: template.subject, text: template.text, html: template.html, reply_to: template.replyTo }),
     });
     if (!response.ok) throw new Error("EMAIL_PROVIDER_REQUEST_FAILED");
   }

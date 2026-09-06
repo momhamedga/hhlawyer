@@ -34,11 +34,41 @@ export function parseWebOrigins(value: string) {
   return [...new Set(origins)];
 }
 
+export function parseNotificationRecipients(value: string) {
+  const values = value.split(",").map((recipient) => recipient.trim());
+
+  if (values.length === 0 || values.some((recipient) => recipient.length === 0)) {
+    throw new Error("CONTACT_NOTIFICATION_TO_INVALID");
+  }
+
+  const emailSchema = z.string().email();
+  const recipients = values.map((recipient) => {
+    const parsed = emailSchema.safeParse(recipient);
+
+    if (!parsed.success) {
+      throw new Error("CONTACT_NOTIFICATION_TO_INVALID");
+    }
+
+    return parsed.data;
+  });
+
+  return [...new Set(recipients)];
+}
+
 const webOriginsSchema = z.string().min(1).default("http://localhost:3000").transform((value, context) => {
   try {
     return parseWebOrigins(value);
   } catch {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "WEB_ORIGIN must be a comma-separated list of valid HTTP(S) origins." });
+    return z.NEVER;
+  }
+});
+
+const notificationRecipientsSchema = z.string().min(1).transform((value, context) => {
+  try {
+    return parseNotificationRecipients(value);
+  } catch {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "CONTACT_NOTIFICATION_TO must be a comma-separated list of valid email addresses." });
     return z.NEVER;
   }
 });
@@ -53,7 +83,7 @@ const environmentSchema = z
     EMAIL_PROVIDER: z.enum(["resend"]).optional(),
     EMAIL_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.string().email().optional(),
-    CONTACT_NOTIFICATION_TO: z.string().email().optional(),
+    CONTACT_NOTIFICATION_TO: notificationRecipientsSchema.optional(),
     AUTH_SECRET: z.string().min(32).default("development-only-auth-secret-change-before-production"),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(14),

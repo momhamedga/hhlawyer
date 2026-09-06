@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { contactSubmissionSchema, consultationSubmissionSchema } from "@hhlawyer/validation";
+import { parseNotificationRecipients } from "../../config/env.js";
 import { DisabledEmailNotifier, ResendEmailNotifier } from "./email.service.js";
 import { buildConsultationEmail, buildContactEmail } from "./email.templates.js";
 import type { ConsultationNotification, ContactNotification } from "./email.types.js";
@@ -37,6 +38,35 @@ function contact(locale: "ar" | "en" = "en"): ContactNotification {
 afterEach(() => vi.restoreAllMocks());
 
 describe("professional email templates", () => {
+  it("normalizes one notification recipient", () => {
+    expect(parseNotificationRecipients("office@example.test")).toEqual(["office@example.test"]);
+  });
+
+  it("normalizes two comma-separated notification recipients", () => {
+    expect(parseNotificationRecipients("first@example.test,second@example.test")).toEqual(["first@example.test", "second@example.test"]);
+  });
+
+  it("trims whitespace around notification recipients", () => {
+    expect(parseNotificationRecipients(" first@example.test , second@example.test ")).toEqual(["first@example.test", "second@example.test"]);
+  });
+
+  it("rejects a malformed first notification recipient", () => {
+    expect(() => parseNotificationRecipients("not-an-email,second@example.test")).toThrow("CONTACT_NOTIFICATION_TO_INVALID");
+  });
+
+  it("rejects a malformed second notification recipient", () => {
+    expect(() => parseNotificationRecipients("first@example.test,not-an-email")).toThrow("CONTACT_NOTIFICATION_TO_INVALID");
+  });
+
+  it("rejects empty entries in the notification recipient list", () => {
+    expect(() => parseNotificationRecipients("first@example.test,,second@example.test")).toThrow("CONTACT_NOTIFICATION_TO_INVALID");
+    expect(() => parseNotificationRecipients("first@example.test,")).toThrow("CONTACT_NOTIFICATION_TO_INVALID");
+  });
+
+  it("removes exact duplicate notification recipients while preserving order", () => {
+    expect(parseNotificationRecipients("first@example.test,second@example.test,first@example.test")).toEqual(["first@example.test", "second@example.test"]);
+  });
+
   it("builds a readable English consultation email with a localized service title and reply-to", () => {
     const template = buildConsultationEmail(consultation());
     expect(template.subject).toBe("New Consultation — CONS-2026-000123");
@@ -77,16 +107,28 @@ describe("professional email templates", () => {
     expect(consultationSubmissionSchema.safeParse({ serviceId: "ck000000000000000000000000", name: "Amina Client", email: "amina@example.test\r\nBcc: attacker@example.test", phone: "+971501234567", preferredDate: "2099-12-31", preferredTime: "09:00 AM", website: "" }).success).toBe(false);
   });
 
-  it("uses Resend html, text, and reply_to fields without sending a real email", async () => {
+  it("passes the complete recipient set to Resend for consultation notifications", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
-    const notifier = new ResendEmailNotifier("test-api-key", "onboarding@resend.dev", "office@example.test");
+    const notifier = new ResendEmailNotifier("test-api-key", "onboarding@resend.dev", ["primary@example.test", "backup@example.test"]);
     await notifier.sendConsultationNotification(consultation());
     expect(fetchMock).toHaveBeenCalledOnce();
     const request = fetchMock.mock.calls[0]?.[1];
     const body = JSON.parse(String(request?.body));
-    expect(body).toMatchObject({ from: "onboarding@resend.dev", to: ["office@example.test"], reply_to: "amina@example.test" });
+    expect(body).toMatchObject({ from: "onboarding@resend.dev", to: ["primary@example.test", "backup@example.test"], reply_to: "amina@example.test" });
     expect(body.html).toContain("New Consultation Request");
     expect(body.text).toContain("Commercial and Corporate Law");
+  });
+
+  it("passes the complete recipient set to Resend for contact notifications", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
+    const notifier = new ResendEmailNotifier("test-api-key", "onboarding@resend.dev", ["primary@example.test", "backup@example.test"]);
+    await notifier.sendContactNotification(contact());
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const request = fetchMock.mock.calls[0]?.[1];
+    const body = JSON.parse(String(request?.body));
+    expect(body).toMatchObject({ from: "onboarding@resend.dev", to: ["primary@example.test", "backup@example.test"], reply_to: "amina@example.test" });
+    expect(body.html).toContain("New Contact Message");
+    expect(body.text).toContain("Commercial enquiry");
   });
 
   it("does not attempt delivery while email notifications are disabled", async () => {

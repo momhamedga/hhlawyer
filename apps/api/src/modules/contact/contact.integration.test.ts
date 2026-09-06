@@ -30,6 +30,7 @@ describe("contact API", () => {
     const response = await request(app).post("/api/v1/contact").send(input);
     expect(response.status).toBe(201); expect(response.body).toMatchObject({ success: true, data: { status: "received" } });
     expect(response.body.data).not.toHaveProperty("id"); expect(response.body.data).not.toHaveProperty("message"); expect(response.body.data).not.toHaveProperty("email");
+    expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
     expect(await database.contactMessage.findFirst({ where: { name: input.name } })).toMatchObject({ status: "UNREAD", subject: input.subject });
     expect(contactNotifications).toContainEqual(expect.objectContaining({ subject: input.subject, locale: "en" }));
   });
@@ -44,6 +45,7 @@ describe("contact API", () => {
     const consultationResponse = await request(app).post("/api/v1/consultations").set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: "2099-12-31", preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
     expect(consultationResponse.status).toBe(201);
     expect(consultationResponse.body).toMatchObject({ success: true, data: { status: "PENDING" } });
+    expect(JSON.stringify(consultationResponse.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
     expect(consultationNotifications.at(-1)).toMatchObject({ locale: "ar", serviceSlug: expect.any(String), serviceName: expect.any(String) });
   });
 
