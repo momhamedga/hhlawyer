@@ -1,11 +1,10 @@
 "use client";
 
-import { addDays, startOfToday } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BOOKING_TIME_SLOTS, consultationSubmissionSchema } from "@hhlawyer/validation";
+import { BOOKING_TIME_SLOTS, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
 import type { ConsultationCreated, PublicService } from "@hhlawyer/types";
 import type { z } from "zod";
 import { Alert, Button, Card, CardContent, Textarea } from "@/components/ui";
@@ -45,7 +44,7 @@ export function BookingSystem() {
   const selectedTime = useWatch({ control: form.control, name: "preferredTime" });
   const selectedService = services.data?.find((service) => service.id === serviceId);
   const selectedServiceCopy = selectedService ? localizeService(locale, selectedService) : undefined;
-  const days = Array.from({ length: 7 }, (_, index) => addDays(startOfToday(), index));
+  const days = consultationCalendarDates();
 
   async function submitDetails(values: Values) {
     try {

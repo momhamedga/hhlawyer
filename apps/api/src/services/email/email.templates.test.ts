@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { contactSubmissionSchema, consultationSubmissionSchema } from "@hhlawyer/validation";
 import { parseNotificationRecipients } from "../../config/env.js";
-import { DisabledEmailNotifier, ResendEmailNotifier } from "./email.service.js";
+import { DisabledEmailNotifier, EmailProviderRequestError, logNotificationFailure, ResendEmailNotifier } from "./email.service.js";
 import { buildConsultationEmail, buildContactEmail } from "./email.templates.js";
 import type { ConsultationNotification, ContactNotification } from "./email.types.js";
 
@@ -108,7 +108,8 @@ describe("professional email templates", () => {
   });
 
   it("passes the complete recipient set to Resend for consultation notifications", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
+    const infoMock = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "safe-message-id" }), { status: 200, headers: { "Content-Type": "application/json" } }));
     const notifier = new ResendEmailNotifier("test-api-key", "onboarding@resend.dev", ["primary@example.test", "backup@example.test"]);
     await notifier.sendConsultationNotification(consultation());
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -117,10 +118,12 @@ describe("professional email templates", () => {
     expect(body).toMatchObject({ from: "onboarding@resend.dev", to: ["primary@example.test", "backup@example.test"], reply_to: "amina@example.test" });
     expect(body.html).toContain("New Consultation Request");
     expect(body.text).toContain("Commercial and Corporate Law");
+    expect(infoMock).toHaveBeenCalledWith({ provider: "resend", category: "consultation", code: "EMAIL_NOTIFICATION_ACCEPTED", status: 200, messageId: "safe-message-id", recipientCount: 2 });
   });
 
   it("passes the complete recipient set to Resend for contact notifications", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
+    const infoMock = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "safe-message-id" }), { status: 200, headers: { "Content-Type": "application/json" } }));
     const notifier = new ResendEmailNotifier("test-api-key", "onboarding@resend.dev", ["primary@example.test", "backup@example.test"]);
     await notifier.sendContactNotification(contact());
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -129,6 +132,26 @@ describe("professional email templates", () => {
     expect(body).toMatchObject({ from: "onboarding@resend.dev", to: ["primary@example.test", "backup@example.test"], reply_to: "amina@example.test" });
     expect(body.html).toContain("New Contact Message");
     expect(body.text).toContain("Commercial enquiry");
+    expect(infoMock).toHaveBeenCalledWith({ provider: "resend", category: "contact", code: "EMAIL_NOTIFICATION_ACCEPTED", status: 200, messageId: "safe-message-id", recipientCount: 2 });
+  });
+
+  it("logs only safe provider metadata when Resend rejects a notification", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const errorMock = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ name: "validation_error", message: "Rejected recipient private@example.test" }), { status: 422, headers: { "Content-Type": "application/json" } }));
+    const notifier = new ResendEmailNotifier("test-api-key", "sender@example.test", ["primary@example.test", "backup@example.test"]);
+
+    let providerError: unknown;
+    try {
+      await notifier.sendContactNotification(contact());
+    } catch (error) {
+      providerError = error;
+    }
+
+    expect(providerError).toBeInstanceOf(EmailProviderRequestError);
+    logNotificationFailure("safe-request-id", notifier.provider, "contact", providerError);
+    expect(errorMock).toHaveBeenCalledWith({ requestId: "safe-request-id", provider: "resend", category: "contact", code: "EMAIL_NOTIFICATION_FAILED", status: 422, providerCode: "validation_error" });
+    expect(JSON.stringify(errorMock.mock.calls)).not.toMatch(/private@example\.test|test-api-key|Rejected recipient/);
   });
 
   it("does not attempt delivery while email notifications are disabled", async () => {

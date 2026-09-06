@@ -9,6 +9,34 @@ export const serviceSchema = z.object({
 });
 
 export const BOOKING_TIME_SLOTS = ["09:00 AM", "10:30 AM", "01:00 PM", "04:30 PM"] as const;
+export const DEFAULT_BUSINESS_TIME_ZONE = "Asia/Dubai";
+
+export function calendarDateInTimeZone(now: Date, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function consultationCalendarDates(now = new Date(), count = 7, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new RangeError("Consultation calendar date count must be a positive integer.");
+  }
+
+  const [year, month, day] = calendarDateInTimeZone(now, timeZone).split("-").map(Number);
+  const firstDate = new Date(Date.UTC(year, month - 1, day, 12));
+
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(firstDate);
+    date.setUTCDate(firstDate.getUTCDate() + index);
+    return [date.getUTCFullYear(), String(date.getUTCMonth() + 1).padStart(2, "0"), String(date.getUTCDate()).padStart(2, "0")].join("-");
+  });
+}
 
 export function isValidCalendarDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {

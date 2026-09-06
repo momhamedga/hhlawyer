@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
+import { calendarDateInTimeZone, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
 import { createApp } from "../../app.js";
 import { createTestPrismaClient } from "../../lib/test-database.js";
 import { formatConsultationReference } from "./consultations.service.js";
@@ -39,6 +40,17 @@ describe("consultation booking API", () => {
   it("formats yearly references with a six-digit sequence", () => {
     expect(formatConsultationReference(2026, 1)).toBe("CONS-2026-000001");
     expect(formatConsultationReference(2027, 42)).toBe("CONS-2027-000042");
+  });
+
+  it("offers the Dubai business date when the visitor-local calendar is still on the prior day", () => {
+    const now = new Date("2026-09-06T20:30:00.000Z");
+    const visitorDate = calendarDateInTimeZone(now, "America/New_York");
+    const [businessDate] = consultationCalendarDates(now);
+
+    expect(visitorDate).toBe("2026-09-06");
+    expect(businessDate).toBe("2026-09-07");
+    expect(visitorDate < businessDate).toBe(true);
+    expect(consultationSubmissionSchema.safeParse({ ...validPayload("business_timezone"), preferredDate: businessDate }).success).toBe(true);
   });
 
   it("keeps the health endpoint available", async () => {

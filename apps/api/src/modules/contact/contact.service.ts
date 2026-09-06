@@ -20,8 +20,8 @@ export async function createContactMessage(input: ContactSubmission, requestId?:
 
   try {
     await notifier.sendContactNotification({ name: input.name, email: input.email, subject: input.subject, message: input.message, receivedAt: contact.createdAt, locale });
-  } catch {
-    logNotificationFailure(requestId, notifier.provider, "contact");
+  } catch (error) {
+    logNotificationFailure(requestId, notifier.provider, "contact", error);
   }
   return contact;
 }

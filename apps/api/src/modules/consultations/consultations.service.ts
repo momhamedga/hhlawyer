@@ -1,4 +1,5 @@
 import type { ConsultationSubmission } from "@hhlawyer/types";
+import { calendarDateInTimeZone } from "@hhlawyer/validation";
 import { ConsultationStatus, Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import { env } from "../../config/env.js";
@@ -13,14 +14,8 @@ type TransactionClient = Prisma.TransactionClient;
 const consultationTransactionTimeoutMs = 15_000;
 
 function businessDateParts(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: env.BUSINESS_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-  return { year: Number(value.year), date: `${value.year}-${value.month}-${value.day}` };
+  const date = calendarDateInTimeZone(now, env.BUSINESS_TIME_ZONE);
+  return { year: Number(date.slice(0, 4)), date };
 }
 
 /** Stores a selected calendar day at UTC noon so its YYYY-MM-DD value is deterministic. */
@@ -97,8 +92,8 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
     }, { timeout: consultationTransactionTimeoutMs });
     try {
       await notifier.sendConsultationNotification({ referenceNumber: consultation.consultation.referenceNumber, serviceSlug: consultation.service.slug, serviceName: consultation.service.name, name: input.name, email: input.email, phone: input.phone, preferredDate: consultation.consultation.preferredDate, preferredTime: input.preferredTime, receivedAt: consultation.consultation.createdAt, message: input.message, locale });
-    } catch {
-      logNotificationFailure(requestId, notifier.provider, "consultation");
+    } catch (error) {
+      logNotificationFailure(requestId, notifier.provider, "consultation", error);
     }
     return consultation.consultation;
   } catch (error) {
