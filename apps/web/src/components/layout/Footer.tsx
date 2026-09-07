@@ -14,7 +14,7 @@ export function Footer() {
   const go = (path: string) => localizePath(path, locale);
   const text = (en: string, ar: string) => locale === "en" ? en : ar;
 
-  return <footer className={styles.footer}>
+  return <footer className={styles.footer} data-public-footer="true">
     <section className={styles.closing} data-testid="homepage-final-cta">
       <div><p>{text("A considered next step", "خطوة تالية مدروسة")}</p><h2>{t.public.home.ctaTitle}</h2><span>{t.public.home.ctaDescription}</span></div>
       <Link href={`${go("/consultation")}#consultation`}>{t.public.home.ctaPrimary}<ArrowUpRight size={19} /></Link>

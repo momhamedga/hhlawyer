@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ServicesPage from "../../services/page";
+import ServicesPage from "../../../services/page";
 import { isLocale } from "@/i18n/locale";
 import { localizedMetadata } from "@/i18n/seo";
 

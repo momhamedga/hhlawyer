@@ -3,10 +3,6 @@ import { headers } from "next/headers";
 import { Cairo, Inter } from "next/font/google";
 import "./globals.css";
 
-// المكونات المشتركة
-import { Header } from "@/components/shared/Header";
-import { Footer } from "@/components/layout/Footer";
-import { AnimatedBackground } from "@/components/shared/layout/AnimatedBackground";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
@@ -67,23 +63,11 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <body className="bg-background text-foreground antialiased min-h-screen flex flex-col overflow-x-hidden">
-
-        {/* الخلفية الحية */}
+      <body className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground antialiased">
         <ThemeProvider nonce={nonce}>
         <LocaleProvider>
         <QueryProvider>
-          <AnimatedBackground />
-
-        {/* الهيدر */}
-        <Header />
-
-        {/* 4. حاوية المحتوى الرئيسي */}
-        <main className="relative z-10 grow pt-18 md:pt-20">
           {children}
-        </main>
-
-          <Footer />
         </QueryProvider>
         </LocaleProvider>
         </ThemeProvider>

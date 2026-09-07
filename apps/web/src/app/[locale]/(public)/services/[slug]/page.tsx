@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ServiceDetails from "../../../services/[slug]/page";
+import ServiceDetails from "../../../../services/[slug]/page";
 import { LAW_SERVICES } from "@/constants/Services";
 import { localizeService } from "@/i18n/format";
 import { isLocale } from "@/i18n/locale";

@@ -9,6 +9,7 @@ import type { z } from "zod";
 
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@/components/ui";
+import { AdminPage } from "@/components/admin/foundation";
 import { login } from "@/lib/api/auth";
 import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
 import { messages } from "@/i18n/messages";
@@ -27,7 +28,7 @@ export default function AdminLogin() {
   });
 
   return (
-    <section className="mx-auto max-w-md px-5 py-10">
+    <AdminPage className="max-w-md py-10">
       <div className="mb-4 flex justify-end">
         <ThemeToggle id="admin-theme" />
       </div>
@@ -53,6 +54,6 @@ export default function AdminLogin() {
           </form>
         </CardContent>
       </Card>
-    </section>
+    </AdminPage>
   );
 }

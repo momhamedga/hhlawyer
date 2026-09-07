@@ -28,7 +28,7 @@ export function Header() {
 
   if (isAdmin) return <header className={styles.adminHeader} data-admin-shell="true"><Link aria-label={t.brand.name} className={styles.adminBrand} href={localizePath("/admin", locale)}><BrandLogo priority variant="header" /><span>{t.admin.title}</span></Link></header>;
 
-  return <header className={styles.header}>
+  return <header className={styles.header} data-public-header="true">
     <div className={styles.accentRule} />
     <div className={styles.inner}>
       <Link aria-label={t.brand.name} className={styles.brand} href={localizePath("/", locale)}><BrandLogo priority variant="header" /></Link>
