@@ -112,6 +112,7 @@ for (const locale of ["ar", "en"] as const) {
         await assertAdminBoundary(page, locale);
         const dimensions = await page.evaluate(() => ({ documentWidth: document.documentElement.scrollWidth, viewportWidth: window.innerWidth }));
         expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+        await expect(page.locator("main#admin-main")).toBeVisible();
         const main = await page.locator("main#admin-main").boundingBox();
         expect(main).not.toBeNull();
         expect(main!.x).toBeGreaterThanOrEqual(0);

@@ -155,6 +155,69 @@
   box-shadow: var(--admin-shadow-md);
 }
 
+.breadcrumbs {
+  min-width: 0;
+  color: var(--admin-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.breadcrumbs ol,
+.breadcrumbs li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.breadcrumbs ol {
+  gap: 0.35rem;
+}
+
+.breadcrumbs li {
+  gap: 0.35rem;
+}
+
+.breadcrumbs a {
+  color: var(--admin-text-muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2rem;
+}
+
+.breadcrumbs a:hover {
+  color: var(--admin-text);
+  text-decoration-color: var(--admin-accent);
+}
+
+.breadcrumbs a:focus-visible {
+  border-radius: var(--admin-radius-sm);
+  outline: 2px solid var(--admin-focus);
+  outline-offset: 3px;
+}
+
+.breadcrumbs [aria-current="page"] {
+  overflow: hidden;
+  color: var(--admin-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbSeparator {
+  flex: none;
+  color: var(--admin-text-subtle);
+}
+
+:global([dir="rtl"]) .breadcrumbSeparator {
+  rotate: 180deg;
+}
+
+.breadcrumbTechnical {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 48rem) {
   .pageHeader {
     align-items: stretch;

@@ -90,7 +90,8 @@ test("LAWYER and STAFF are denied dashboard data", async ({ page }) => {
   for (const role of ["lawyer", "staff"] as const) {
     await login(page, `${marker}.${role}@example.test`);
     await page.goto("/admin");
-    await expect(page.getByRole("alert").filter({ hasText: "ليس لديك صلاحية الوصول إلى لوحة التحكم." })).toBeVisible();
+    await page.waitForURL("**/ar/admin/consultations");
+    await expect(page.getByTestId("admin-desktop-navigation").locator('[data-nav-id="overview"]')).toHaveCount(0);
     expect(await page.evaluate(async () => (await fetch("http://localhost:4000/api/v1/admin/overview", { credentials: "include" })).status)).toBe(403);
   }
 });

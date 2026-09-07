@@ -1,9 +1,10 @@
 .workspace {
   display: grid;
-  grid-template-columns: clamp(12rem, 18vw, 15rem) minmax(0, 1fr);
+  grid-template-columns: clamp(13.5rem, 18vw, 15rem) minmax(0, 1fr);
   grid-template-areas:
-    "bar bar"
+    "side bar"
     "side content";
+  grid-template-rows: auto 1fr;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--admin-canvas);
@@ -11,13 +12,8 @@
   color-scheme: light;
 }
 
-:global(.dark) .workspace {
-  color-scheme: dark;
-}
-
-.loginWorkspace {
-  display: block;
-}
+:global(.dark) .workspace { color-scheme: dark; }
+.loginWorkspace { display: block; }
 
 .loginHeader {
   position: absolute;
@@ -36,26 +32,6 @@
   font-size: 0.75rem;
   font-weight: 700;
   backdrop-filter: blur(14px);
-}
-
-.loginHeader > a {
-  display: flex;
-  min-height: var(--admin-control-size);
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--admin-brand);
-  font-size: 0.9rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-
-:global(.dark) .loginHeader > a {
-  color: var(--admin-text);
-}
-
-.loginHeader > a:focus-visible {
-  outline: 2px solid var(--admin-focus);
-  outline-offset: 2px;
 }
 
 .loginContent {
@@ -93,12 +69,55 @@
   outline-offset: 2px;
 }
 
+.brand {
+  display: flex;
+  min-width: 0;
+  min-height: var(--admin-control-size);
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: var(--admin-radius-md);
+  color: inherit;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 3px;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 50%;
+  color: var(--admin-accent);
+}
+
+.brandCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.brandCopy strong,
+.brandCopy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brandCopy strong { font-size: 0.8rem; font-weight: 900; letter-spacing: -0.01em; }
+.brandCopy span { color: color-mix(in srgb, currentColor 68%, transparent); font-size: 0.67rem; font-weight: 700; }
+
 .topbar {
   grid-area: bar;
   position: sticky;
-  z-index: 50;
+  z-index: 40;
   inset-block-start: 0;
   display: flex;
+  min-width: 0;
   min-height: 4.5rem;
   align-items: center;
   gap: 1rem;
@@ -109,191 +128,271 @@
   backdrop-filter: blur(14px);
 }
 
-.topbar button {
-  display: none;
-  min-width: var(--admin-control-size);
+.topbar > :global(nav) { flex: 1; }
+.topbar > span { color: var(--admin-text-muted); font-size: 0.8rem; font-weight: 700; }
+
+.menuButton,
+.accountTrigger {
   min-height: var(--admin-control-size);
-  place-items: center;
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   background: var(--admin-surface-raised);
   color: var(--admin-text);
 }
 
-.topbar > a {
+.menuButton { display: none; min-width: var(--admin-control-size); place-items: center; }
+
+.accountTrigger {
   display: flex;
-  min-height: var(--admin-control-size);
+  max-width: min(18rem, 38vw);
   align-items: center;
-  gap: 0.5rem;
-  color: var(--admin-brand);
-  font-size: 0.9rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
+  gap: 0.55rem;
+  padding: 0.35rem 0.65rem;
 }
 
-:global(.dark) .topbar > a {
-  color: var(--admin-text);
-}
+.menuButton:hover,
+.accountTrigger:hover { border-color: var(--admin-accent); }
 
-.topbar > div {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-inline-start: auto;
-  color: var(--admin-text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.role {
-  border: 1px solid var(--admin-border-strong);
-  border-radius: 999px;
-  padding: 0.25rem 0.5rem;
-  color: var(--admin-text);
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
-}
+.menuButton:focus-visible,
+.accountTrigger:focus-visible { outline: 2px solid var(--admin-focus); outline-offset: 2px; }
+.mobileBrand { display: none; }
 
 .sidebar {
   grid-area: side;
   position: sticky;
-  inset-block-start: 4.5rem;
+  inset-block-start: 0;
   display: flex;
-  height: calc(100vh - 4.5rem);
-  height: calc(100dvh - 4.5rem);
+  height: 100vh;
+  height: 100dvh;
+  min-width: 0;
   flex-direction: column;
   border-inline-end: 1px solid color-mix(in srgb, var(--admin-brand-foreground) 18%, transparent);
-  padding: 1.75rem 0.85rem;
+  padding: 1.1rem 0.85rem;
   background: var(--admin-brand);
   color: var(--admin-brand-foreground);
 }
 
-.sidebar > p {
-  margin: 0.2rem 0.7rem 1.1rem;
-  color: color-mix(in srgb, var(--admin-brand-foreground) 64%, transparent);
-  font-size: 0.66rem;
+.sidebar > .brand { margin-inline: 0.35rem; margin-block-end: 1.35rem; }
+.navigation { display: grid; gap: 1.15rem; }
+.navigationGroup { display: grid; gap: 0.35rem; }
+
+.navigationGroup > p {
+  margin-inline: 0.7rem;
+  color: color-mix(in srgb, var(--admin-brand-foreground) 52%, transparent);
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
-.sidebar nav {
-  display: grid;
-  gap: 0.25rem;
-}
+.navigationGroup > div { display: grid; gap: 0.2rem; }
 
-.sidebar a {
+.navigation a {
+  position: relative;
   display: flex;
   min-height: var(--admin-control-size);
   align-items: center;
   gap: 0.7rem;
+  border: 1px solid transparent;
   border-radius: var(--admin-radius-md);
   padding-inline: 0.7rem;
   color: color-mix(in srgb, var(--admin-brand-foreground) 76%, transparent);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.navigation a::before {
+  position: absolute;
+  inset-block: 0.7rem;
+  inset-inline-start: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: transparent;
+  content: "";
+}
+
+.navigation a:hover { background: color-mix(in srgb, var(--admin-brand-foreground) 7%, transparent); color: var(--admin-brand-foreground); }
+.navigation a.active { border-color: color-mix(in srgb, var(--admin-accent) 20%, transparent); background: color-mix(in srgb, var(--admin-accent) 14%, transparent); color: var(--admin-brand-foreground); }
+.navigation a.active::before { background: var(--admin-accent); }
+.navigation a:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
+
+.sidebarAccount {
+  display: grid;
+  gap: 0.35rem;
+  margin-block-start: auto;
+  border-block-start: 1px solid color-mix(in srgb, var(--admin-brand-foreground) 17%, transparent);
+  padding: 1rem 0.45rem 0;
+}
+
+.sidebarAccount > bdi { overflow: hidden; color: color-mix(in srgb, var(--admin-brand-foreground) 56%, transparent); font-size: 0.66rem; text-overflow: ellipsis; white-space: nowrap; }
+.identity, .identityCompact { display: flex; min-width: 0; align-items: center; gap: 0.6rem; }
+
+.avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--admin-accent) 16%, transparent);
+  color: currentColor;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.identityText { display: grid; min-width: 0; text-align: start; }
+.identityText strong, .identityText span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.identityText strong { font-size: 0.75rem; font-weight: 800; }
+.identityText span { color: color-mix(in srgb, currentColor 64%, transparent); font-size: 0.65rem; font-weight: 650; }
+
+.content { grid-area: content; min-width: 0; background: var(--admin-canvas); color: var(--admin-text); outline: none; }
+
+/* Phase 9.3 shell owns these controls; retain Dashboard markup without duplicating its UI. */
+.content :global(.admin-dashboard > header > div:last-child) { display: none; }
+
+.sessionLoading,
+.routeLoading {
+  display: grid;
+  min-height: 16rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  color: var(--admin-text-muted);
+  padding: var(--admin-page-gutter);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sessionLoading > span {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--admin-border);
+  border-block-start-color: var(--admin-accent);
+  border-radius: 50%;
+  animation: admin-spin 800ms linear infinite;
+}
+
+.mobileOverlay { background: var(--admin-overlay) !important; }
+
+.mobileSheet {
+  inset-block: 0 !important;
+  inset-inline-start: 0 !important;
+  inset-inline-end: auto !important;
+  display: flex;
+  width: min(22rem, 88vw) !important;
+  max-width: none !important;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-block: 0 !important;
+  border-inline-start: 0 !important;
+  border-inline-end: 1px solid var(--admin-border) !important;
+  border-radius: 0 !important;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)) !important;
+  translate: 0 0 !important;
+  transform: none !important;
+}
+
+:global([dir="ltr"]) .mobileSheet {
+  right: auto !important;
+  left: 0 !important;
+}
+
+:global([dir="rtl"]) .mobileSheet {
+  right: 0 !important;
+  left: auto !important;
+}
+
+.mobileSheet > .brand { margin-block: 0.85rem 1rem; }
+.mobileSheet .navigation { padding-block: 0.75rem 1rem; border-block: 1px solid var(--admin-border); }
+.mobileSheet .navigationGroup > p { color: var(--admin-text-subtle); }
+.mobileSheet .navigation a { color: var(--admin-text-muted); }
+.mobileSheet .navigation a:hover,
+.mobileSheet .navigation a.active { background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface)); color: var(--admin-text); }
+
+.accountDialog { width: min(calc(100% - 2rem), 27rem) !important; }
+.accountPanel { display: grid; gap: 1.1rem; margin-block-start: 1.25rem; }
+.accountIdentity { display: grid; gap: 0.45rem; border-block-end: 1px solid var(--admin-border); padding-block-end: 1rem; }
+.accountIdentity > bdi { overflow: hidden; color: var(--admin-text-muted); font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.localeControl { display: grid; gap: 0.5rem; }
+.localeControl > p { color: var(--admin-text); font-size: 0.875rem; font-weight: 800; }
+.localeControl > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+
+.localeControl button,
+.logoutButton {
+  min-height: var(--admin-control-size);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
-.sidebar a.active,
-.sidebar a:hover {
-  background: color-mix(in srgb, var(--admin-accent) 24%, transparent);
-  color: var(--admin-brand-foreground);
-}
+.localeControl button[aria-pressed="true"] { border-color: var(--admin-accent); background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface)); color: var(--admin-text); }
+.localeControl button:focus-visible,
+.logoutButton:focus-visible { outline: 2px solid var(--admin-focus); outline-offset: 2px; }
 
-.sidebar a:focus-visible,
-.topbar button:focus-visible,
-.topbar > a:focus-visible {
-  outline: 2px solid var(--admin-accent);
-  outline-offset: 2px;
-}
-
-.sidebar footer {
+.logoutButton {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  margin-block-start: auto;
-  padding: 0.8rem 0.7rem 0;
-  border-block-start: 1px solid color-mix(in srgb, var(--admin-brand-foreground) 22%, transparent);
-  color: color-mix(in srgb, var(--admin-brand-foreground) 68%, transparent);
-  font-size: 0.68rem;
+  justify-content: center;
+  gap: 0.5rem;
+  border-color: color-mix(in srgb, var(--admin-status-danger) 44%, var(--admin-border));
+  color: var(--admin-status-danger);
 }
 
-.content {
-  grid-area: content;
-  min-width: 0;
-  background: var(--admin-canvas);
-  color: var(--admin-text);
-  outline: none;
+.logoutButton:disabled { cursor: not-allowed; opacity: 0.6; }
+.accountError { color: var(--admin-status-danger); font-size: 0.78rem; font-weight: 700; }
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Temporary compatibility bridge for modules scheduled for migration in 9.4–9.8. */
-.content :global(section) {
-  max-width: none !important;
-}
-
-.content :global(table) {
-  background: var(--admin-surface) !important;
-}
-
+.content :global(section) { max-width: none !important; }
+.content :global(table) { background: var(--admin-surface) !important; }
 .content :global(fieldset),
 .content :global([role="dialog"]),
-.content :global([role="alertdialog"]) {
-  border-color: var(--admin-border) !important;
-  background: var(--admin-surface) !important;
-  box-shadow: var(--admin-shadow-sm);
-}
+.content :global([role="alertdialog"]) { border-color: var(--admin-border) !important; background: var(--admin-surface) !important; box-shadow: var(--admin-shadow-sm); }
 
-@media (max-width: 64rem) {
-  .workspace {
-    grid-template-columns: clamp(11rem, 19vw, 12.5rem) minmax(0, 1fr);
-  }
+@media (max-width: 64rem) and (min-width: 48.001rem) {
+  .workspace { grid-template-columns: 11.5rem minmax(0, 1fr); }
+  .sidebar { padding-inline: 0.65rem; }
+  .navigation a { gap: 0.5rem; padding-inline: 0.55rem; font-size: 0.74rem; }
+  .brandCopy strong { font-size: 0.72rem; }
 }
 
 @media (max-width: 48rem) {
-  .workspace {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "bar"
-      "content";
-  }
+  .workspace { grid-template-columns: minmax(0, 1fr); grid-template-areas: "bar" "content"; }
+  .sidebar { display: none; }
+  .topbar { gap: 0.65rem; }
+  .menuButton { display: grid; }
+  .mobileBrand { display: block; }
+  .mobileBrand .brandCopy { display: none; }
+  .mobileBrand .brandMark { width: 2rem; height: 2rem; }
+  .accountTrigger { min-width: var(--admin-control-size); padding-inline: 0.65rem; }
+  .accountTrigger .identityCompact { display: none; }
+  .content { overflow: visible; }
+}
 
-  .topbar button {
-    display: grid;
-  }
-
-  .topbar > div > span:first-child {
-    display: none;
-  }
-
-  .sidebar {
-    position: fixed;
-    z-index: 60;
-    inset-block: 4.5rem 0;
-    inset-inline-start: 0;
-    width: min(17rem, 85vw);
-    height: auto;
-    translate: calc(-100% - 1rem) 0;
-    transition: translate 180ms ease;
-    box-shadow: 1rem 0 2.25rem rgb(0 0 0 / 0.22);
-  }
-
-  :global([dir="rtl"]) .sidebar {
-    translate: calc(100% + 1rem) 0;
-    box-shadow: -1rem 0 2.25rem rgb(0 0 0 / 0.22);
-  }
-
-  .sidebar.open {
-    translate: 0;
-  }
-
-  .content {
-    overflow: visible;
-  }
+@media (max-width: 26.875rem) {
+  .topbar > :global(nav) { font-size: 0.7rem; }
+  .topbar { padding-inline: 0.75rem; }
+  .mobileBrand { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .skipLink {
-    transition: none;
-  }
+  .sessionLoading > span { animation-duration: 1.8s; }
 }
+
+@keyframes admin-spin { to { rotate: 360deg; } }

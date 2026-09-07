@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/components/ui/cn";
@@ -90,4 +92,34 @@ export function AdminTechnicalValue({ className, ...props }: HTMLAttributes<HTML
 
 export function AdminDialogContent({ className, ...props }: ComponentProps<typeof DialogContent>) {
   return <DialogContent className={cn(styles.dialogSurface, className)} {...props} />;
+}
+
+export type AdminBreadcrumbItem = {
+  href?: string;
+  label: ReactNode;
+  technical?: boolean;
+};
+
+export function AdminBreadcrumbs({ items, label }: { items: AdminBreadcrumbItem[]; label: string }) {
+  return (
+    <nav aria-label={label} className={styles.breadcrumbs}>
+      <ol>
+        {items.map((item, index) => {
+          const current = index === items.length - 1;
+          return (
+            <li key={`${index}-${String(item.label)}`}>
+              {index > 0 ? <ChevronRight aria-hidden="true" className={styles.breadcrumbSeparator} size={14} /> : null}
+              {item.href && !current ? (
+                <Link href={item.href}>{item.label}</Link>
+              ) : (
+                <span aria-current={current ? "page" : undefined} className={item.technical ? styles.breadcrumbTechnical : undefined}>
+                  {item.technical ? <bdi dir="ltr">{item.label}</bdi> : item.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
 }
