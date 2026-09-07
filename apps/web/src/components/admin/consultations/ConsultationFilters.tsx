@@ -4,7 +4,7 @@ import type { ConsultationStatus, PublicService } from "@hhlawyer/types";
 import type { AdminConsultationFilters } from "@/lib/api/admin-consultations";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { messages } from "@/i18n/messages";
-import { displayEnum } from "@/i18n/format";
+import { displayEnum, localizeServiceTitle } from "@/i18n/format";
 
 type UrlFilters = Omit<AdminConsultationFilters, "page" | "limit" | "search">;
 
@@ -38,7 +38,7 @@ export function ConsultationFilters({ filters, services, search, onSearchChange,
         <label className="text-sm">{t.service}
           <select value={filters.serviceId ?? ""} onChange={(event) => update("serviceId", event.target.value)} className="mt-1 w-full rounded border border-white/20 bg-[#162032] p-2 text-sm">
             <option value="">{t.allServices}</option>
-            {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+            {services.map((service) => <option key={service.id} value={service.id}>{localizeServiceTitle(locale, service)}</option>)}
           </select>
         </label>
         <label className="text-sm">{messages[locale].admin.sort}

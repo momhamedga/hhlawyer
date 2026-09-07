@@ -71,7 +71,10 @@ describe("professional email templates", () => {
     const template = buildConsultationEmail(consultation());
     expect(template.subject).toBe("New Consultation — CONS-2026-000123");
     expect(template.replyTo).toBe("amina@example.test");
+    expect(template.html).toContain('lang="en" dir="ltr"');
     expect(template.text).toContain("Commercial and Corporate Law");
+    expect(template.text).toContain("Preferred Date: 30 August 2026");
+    expect(template.text).toContain("Preferred Time: 10:30 AM");
     expect(template.html).toContain("Commercial and Corporate Law");
     expect(template.html).not.toContain("Database service name");
     expect(template.text).not.toContain("2026-08-30T12:00:00.000Z");
@@ -85,6 +88,10 @@ describe("professional email templates", () => {
     expect(template.html).toContain('lang="ar" dir="rtl"');
     expect(template.html).toContain("القانون التجاري والشركات");
     expect(template.text).toContain("رقم الاستشارة");
+    expect(template.text).toContain("التاريخ المفضل: 30 أغسطس 2026");
+    expect(template.text).toContain("الوقت المفضل: 10:30 ص");
+    expect(template.text).not.toContain("Commercial and Corporate Law");
+    expect(template.text).not.toMatch(/\b(?:AM|PM)\b/);
   });
 
   it("builds a contact email with text fallback, reply-to, and escaped customer content", () => {
@@ -94,6 +101,15 @@ describe("professional email templates", () => {
     expect(template.text).toContain("Commercial enquiry");
     expect(template.html).toContain("&lt;contract&gt; &amp; confirm.");
     expect(template.html).not.toContain("<contract>");
+  });
+
+  it("builds a fully RTL Arabic contact email", () => {
+    const template = buildContactEmail(contact("ar"));
+    expect(template.subject).toBe("رسالة تواصل جديدة — Amina Client");
+    expect(template.html).toContain('lang="ar" dir="rtl"');
+    expect(template.text).toContain("الاسم الكامل: Amina Client");
+    expect(template.text).toContain("الموضوع: Commercial enquiry");
+    expect(template.text).not.toContain("New Contact Message");
   });
 
   it("prevents header injection in customer-derived contact subjects", () => {

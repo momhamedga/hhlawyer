@@ -92,9 +92,11 @@ test("Contact is bilingual, editorial, light-safe, and exposes real direct conta
 test("Contact preserves validation, payload, loading, and inline success without a real submission", async ({ page }) => {
   const errors: string[] = [];
   const requests: unknown[] = [];
+  const requestLanguages: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/v1/contact", async (route) => {
     requests.push(route.request().postDataJSON());
+    requestLanguages.push(route.request().headers()["accept-language"] ?? "");
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: { status: "received", createdAt: "2099-01-01T00:00:00.000Z" } }) });
   });
@@ -112,7 +114,21 @@ test("Contact preserves validation, payload, loading, and inline success without
   await expect(page.getByRole("button", { name: "Sending..." })).toBeDisabled();
   await expect(page.getByTestId("contact-form-success")).toBeVisible();
   expect(requests).toEqual([{ name: "Contact Editorial Test", email: "contact.editorial@example.test", subject: "General legal question", message: "This is a complete test message for the direct contact form.", website: "" }]);
+  expect(requestLanguages).toEqual(["en"]);
   expect(errors).toEqual([]);
+});
+
+test("Arabic contact submission transports the route locale explicitly", async ({ page }) => {
+  let requestLanguage = "";
+  await page.route("**/api/v1/contact", async (route) => {
+    requestLanguage = route.request().headers()["accept-language"] ?? "";
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: { status: "received", createdAt: "2099-01-01T00:00:00.000Z" } }) });
+  });
+  await page.goto("/ar/contact", { waitUntil: "domcontentloaded" });
+  await fillValidForm(page, "ar");
+  await page.getByRole("button", { name: "إرسال الرسالة" }).click();
+  await expect(page.getByTestId("contact-form-success")).toBeVisible();
+  expect(requestLanguage).toBe("ar");
 });
 
 test("Contact renders its existing API field error without a real submission", async ({ page }) => {

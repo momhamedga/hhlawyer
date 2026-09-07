@@ -39,6 +39,12 @@ export function displayEnum(locale: Locale, value: string) {
   return (messages[locale].status as Record<string, string>)[value] ?? value;
 }
 
+export function localizeServiceTitle(locale: Locale, service: { id?: string; slug?: string; name?: string; title?: string }) {
+  const key = service.slug ?? service.id;
+  if (key && key in serviceContent.en) return serviceContent[locale][key as keyof typeof serviceContent.en].title;
+  return service.title ?? service.name ?? messages[locale].errors.SERVICE_NOT_FOUND;
+}
+
 export function localizeService(locale: Locale, service: { id?: string; slug?: string; name?: string; title?: string; description?: string; desc?: string }) {
   const key = service.slug ?? service.id;
   const translation = key && key in serviceContent.en ? serviceContent.en[key as keyof typeof serviceContent.en] : undefined;

@@ -29,7 +29,7 @@ export function BookingSystem() {
   });
   const services = useQuery({ queryKey: ["active-services"], queryFn: ({ signal }) => getActiveServices(signal) });
   const mutation = useMutation<ConsultationCreated, Error, Values>({
-    mutationFn: (input) => createConsultation(input),
+    mutationFn: (input) => createConsultation(input, locale),
     retry: false,
     onError: (error) => {
       if (error instanceof ApiClientError && error.error.fields) {

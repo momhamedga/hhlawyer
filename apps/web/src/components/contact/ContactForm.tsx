@@ -20,7 +20,7 @@ export function ContactForm() {
   const t = messages[locale].public.contact;
   const form = useForm<ContactValues>({ resolver: zodResolver(contactSubmissionSchema), defaultValues: { name: "", email: "", subject: "", message: "", website: "" } });
   const mutation = useMutation<ContactMessageCreated, Error, ContactValues>({
-    mutationFn: (input) => createContactMessage(input),
+    mutationFn: (input) => createContactMessage(input, locale),
     retry: false,
     onError: (error) => {
       if (error instanceof ApiClientError && error.error.fields) {

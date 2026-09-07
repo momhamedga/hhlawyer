@@ -35,7 +35,7 @@ async function completeToDetails(page: import("@playwright/test").Page, locale: 
   await page.getByTestId("consultation-step-date").locator('button[aria-label^="20"]').first().click();
   await page.getByRole("button", { name: locale === "en" ? "Continue to time" : "المتابعة للوقت" }).click();
   await expect(page.getByTestId("consultation-step-time")).toBeVisible();
-  await page.getByRole("button", { name: "09:00 AM" }).click();
+  await page.getByTestId("consultation-step-time").getByRole("button").first().click();
   await expect(page.getByTestId("consultation-details-form")).toBeVisible();
 }
 
@@ -138,10 +138,12 @@ test("Consultation does not silently expose an unmapped API service name in Arab
 test("Consultation preserves validation, request payload, loading, and inline success without a real submission", async ({ page }) => {
   const errors: string[] = [];
   const requests: unknown[] = [];
+  const requestLanguages: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/v1/services", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: [service] }) }));
   await page.route("**/api/v1/consultations", async (route) => {
     requests.push(route.request().postDataJSON());
+    requestLanguages.push(route.request().headers()["accept-language"] ?? "");
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { referenceNumber: "CONS-2099-000001", status: "PENDING", createdAt: "2099-01-01T00:00:00.000Z" } }) });
   });
@@ -162,7 +164,23 @@ test("Consultation preserves validation, request payload, loading, and inline su
   const payload = requests[0] as Record<string, unknown>;
   expect(payload).toMatchObject({ serviceId: service.id, name: "Consultation Editorial Test", email: "consultation.editorial@example.test", phone: "+971501234567", preferredDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), preferredTime: "09:00 AM", website: "" });
   expect(payload).not.toHaveProperty("message");
+  expect(requestLanguages).toEqual(["en"]);
   expect(errors).toEqual([]);
+});
+
+test("Arabic consultation submission transports the route locale explicitly", async ({ page }) => {
+  let requestLanguage = "";
+  await page.route("**/api/v1/services", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: [service] }) }));
+  await page.route("**/api/v1/consultations", async (route) => {
+    requestLanguage = route.request().headers()["accept-language"] ?? "";
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: { referenceNumber: "CONS-2099-000002", status: "PENDING", createdAt: "2099-01-01T00:00:00.000Z" } }) });
+  });
+  await page.goto("/ar/consultation", { waitUntil: "domcontentloaded" });
+  await completeToDetails(page, "ar");
+  await fillValidDetails(page, "ar");
+  await page.getByRole("button", { name: messages.ar.public.consultation.submit }).click();
+  await expect(page.getByTestId("consultation-booking-success")).toBeVisible();
+  expect(requestLanguage).toBe("ar");
 });
 
 test("Consultation renders its existing API validation error without a real submission", async ({ page }) => {
