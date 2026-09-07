@@ -64,7 +64,7 @@ test.afterAll("clean isolated consultation fixtures", async () => {
 
 test("admin consultation list, detail, and status update", async ({ page }) => {
   await login(page, `${marker}.admin@example.test`);
-  await page.getByRole("link", { name: "الاستشارات" }).click();
+  await page.getByRole("link", { name: "طلبات الاستشارة" }).click();
   await expect(page.getByRole("heading", { name: "طلبات الاستشارة" })).toBeVisible();
   await page.getByLabel("بحث").fill(referenceNumber);
   await expect(page.getByText(referenceNumber)).toBeVisible();
