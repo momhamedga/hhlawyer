@@ -358,13 +358,6 @@
   white-space: nowrap;
 }
 
-/* Temporary compatibility bridge for modules scheduled for migration in 9.4–9.8. */
-.content :global(section) { max-width: none !important; }
-.content :global(table) { background: var(--admin-surface) !important; }
-.content :global(fieldset),
-.content :global([role="dialog"]),
-.content :global([role="alertdialog"]) { border-color: var(--admin-border) !important; background: var(--admin-surface) !important; box-shadow: var(--admin-shadow-sm); }
-
 @media (max-width: 64rem) and (min-width: 48.001rem) {
   .workspace { grid-template-columns: 11.5rem minmax(0, 1fr); }
   .sidebar { padding-inline: 0.65rem; }

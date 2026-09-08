@@ -1,0 +1,10 @@
+import { serviceContent } from "@/i18n/service-content";
+import type { AdminServicesFilters } from "@/lib/api/admin-services";
+
+export const defaultServiceFilters: AdminServicesFilters = { page:1, limit:20, sortBy:"createdAt", sortOrder:"desc" };
+const sorts = new Set(["createdAt:desc","createdAt:asc","name:asc","name:desc","sortOrder:asc","slug:asc"]);
+
+export function serviceFiltersFromSearchParams(params:URLSearchParams):AdminServicesFilters { const page=Math.max(1,Number(params.get("page"))||1);const limit=[10,20,50].includes(Number(params.get("limit")))?Number(params.get("limit")):20;const active=params.get("isActive");const sort=sorts.has(params.get("sort")??"")?params.get("sort")!:"createdAt:desc";const [sortBy,sortOrder]=sort.split(":") as [AdminServicesFilters["sortBy"],AdminServicesFilters["sortOrder"]];return {page,limit,sortBy,sortOrder,...(active==="true"||active==="false"?{isActive:active==="true"}:{})};}
+export function serviceFiltersToSearchParams(filters:AdminServicesFilters){const params=new URLSearchParams();if(filters.page!==1)params.set("page",String(filters.page));if(filters.limit!==20)params.set("limit",String(filters.limit));if(filters.isActive!==undefined)params.set("isActive",String(filters.isActive));if(filters.sortBy!=="createdAt"||filters.sortOrder!=="desc")params.set("sort",`${filters.sortBy}:${filters.sortOrder}`);return params;}
+export function serviceLocalization(slug:string){if(!Object.prototype.hasOwnProperty.call(serviceContent.en,slug))return {mapped:false as const};const key=slug as keyof typeof serviceContent.en;return {mapped:true as const,ar:serviceContent.ar[key],en:serviceContent.en[key]};}
+export function serviceError(code:string|undefined,copy:{duplicateSlug:string;forbidden:string;notFound:string;validation:string;genericError:string}){switch(code){case"SERVICE_SLUG_EXISTS":return copy.duplicateSlug;case"FORBIDDEN":case"UNAUTHORIZED":return copy.forbidden;case"SERVICE_NOT_FOUND":return copy.notFound;case"VALIDATION_ERROR":return copy.validation;default:return copy.genericError;}}
