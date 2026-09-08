@@ -1,5 +1,5 @@
-import { ConsultationDetailClient } from "@/components/admin/consultations/ConsultationDetailClient";
+import { ConsultationDetailPage } from "@/features/admin/consultations";
 
 export default function AdminConsultationDetailPage() {
-  return <ConsultationDetailClient />;
+  return <ConsultationDetailPage />;
 }

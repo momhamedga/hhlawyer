@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { formatConsultationTime, formatLocaleDate, formatLocaleDateTime } from "../src/i18n/format";
 import type { Locale } from "../src/i18n/locale";
-import { messages } from "../src/i18n/messages";
 import { serviceContent } from "../src/i18n/service-content";
+import { consultationsContent } from "../src/features/admin/consultations/consultations-content";
 
 const service = {
   id: "c123456789012345678901234",
@@ -43,7 +43,7 @@ for (const locale of ["ar", "en"] as const satisfies readonly Locale[]) {
     const localizedService = serviceContent[locale].commercial.title;
     const otherService = serviceContent[locale === "ar" ? "en" : "ar"].commercial.title;
     const localizedTime = formatConsultationTime(consultation.preferredTime, locale);
-    const t = messages[locale].admin.consultation;
+    const copy = consultationsContent[locale];
 
     await page.goto(`/${locale}/admin/consultations`, { waitUntil: "domcontentloaded" });
     const row = page.getByText(consultation.referenceNumber, { exact: true }).locator("xpath=ancestor::tr");
@@ -52,11 +52,11 @@ for (const locale of ["ar", "en"] as const satisfies readonly Locale[]) {
     await expect(row).toContainText(formatLocaleDate(consultation.preferredDate, locale));
     await expect(row).toContainText(formatLocaleDateTime(consultation.createdAt, locale));
     await expect(row).not.toContainText(otherService);
-    await expect(page.getByLabel(t.service).locator("option", { hasText: localizedService })).toHaveCount(1);
+    await expect(page.getByLabel(copy.service).locator("option", { hasText: localizedService })).toHaveCount(1);
 
-    await row.getByRole("link", { name: t.viewRequest }).click();
+    await row.getByRole("link", { name: copy.viewDetails }).click();
     await expect(page).toHaveURL(new RegExp(`/${locale}/admin/consultations/${consultation.id}$`));
-    await expect(page.getByRole("heading", { name: t.requestDetails, level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: copy.detailTitle, level: 1 })).toBeVisible();
     const main = page.locator("main");
     await expect(main).toContainText(localizedService);
     await expect(main).toContainText(localizedTime);
