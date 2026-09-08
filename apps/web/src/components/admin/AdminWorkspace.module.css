@@ -385,7 +385,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sessionLoading > span { animation-duration: 1.8s; }
+  .sessionLoading > span { animation: none; }
 }
 
 @keyframes admin-spin { to { rotate: 360deg; } }
