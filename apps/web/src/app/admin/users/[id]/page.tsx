@@ -1,33 +1,5 @@
-"use client";
+import { UserDetailPage } from "@/features/admin/users";
 
-import { useParams } from "next/navigation";
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { UserRole } from "@hhlawyer/types";
-
-import { useLocale } from "@/components/providers/LocaleProvider";
-import { displayEnum, formatLocaleDateTime } from "@/i18n/format";
-import { errorMessage, messages } from "@/i18n/messages";
-import { currentUser } from "@/lib/api/auth";
-import { ApiClientError } from "@/lib/api/client";
-import { adminUsersKeys, changeAdminUserRole, changeAdminUserStatus, getAdminUser, resetAdminUserPassword, updateAdminUser } from "@/lib/api/admin-users";
-
-const roles: UserRole[] = ["ADMIN", "LAWYER", "STAFF"];
-
-export default function UserDetailPage() {
-  const locale = useLocale(); const en = locale === "en"; const t = messages[locale]; const { id } = useParams<{ id: string }>(); const client = useQueryClient();
-  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [dirty, setDirty] = useState(false); const [password, setPassword] = useState(""); const [disableOpen, setDisableOpen] = useState(false); const [message, setMessage] = useState("");
-  const me = useQuery({ queryKey: ["auth", "me"], queryFn: currentUser, retry: false }); const user = useQuery({ queryKey: adminUsersKeys.detail(id), queryFn: () => getAdminUser(id), enabled: me.data?.user.role === "ADMIN" });
-  const refresh = () => Promise.all([client.invalidateQueries({ queryKey: adminUsersKeys.all }), client.invalidateQueries({ queryKey: adminUsersKeys.detail(id) })]);
-  const item = user.data; const formName = dirty ? name : item?.name ?? ""; const formEmail = dirty ? email : item?.email ?? "";
-  const fail = (error: unknown) => setMessage(errorMessage(locale, error instanceof ApiClientError ? error.error.code : undefined));
-  const edit = useMutation({ mutationFn: () => updateAdminUser(id, { name: formName, email: formEmail }), retry: false, onSuccess: async (updated) => { setName(updated.name); setEmail(updated.email); setDirty(false); setMessage(en ? "User details updated." : "تم تحديث بيانات المستخدم."); await refresh(); }, onError: fail });
-  const role = useMutation({ mutationFn: (value: UserRole) => changeAdminUserRole(id, { role: value }), retry: false, onSuccess: async () => { setMessage(en ? "Role updated." : "تم تحديث الدور."); await refresh(); }, onError: fail });
-  const status = useMutation({ mutationFn: (isActive: boolean) => changeAdminUserStatus(id, { isActive }), retry: false, onSuccess: async () => { setDisableOpen(false); setMessage(en ? "User status updated. Active sessions are revoked when disabling." : "تم تحديث حالة المستخدم. سيتم إنهاء الجلسات النشطة عند التعطيل."); await refresh(); }, onError: fail });
-  const reset = useMutation({ mutationFn: () => resetAdminUserPassword(id, password), retry: false, onSuccess: async () => { setPassword(""); setMessage(en ? "Password reset and active sessions revoked." : "تمت إعادة تعيين كلمة المرور وإنهاء الجلسات النشطة."); await refresh(); }, onError: fail });
-  if (me.isLoading || user.isLoading) return <p className="p-8" aria-busy="true">{en ? "Loading…" : "جارٍ التحميل…"}</p>;
-  if (!me.data || me.data.user.role !== "ADMIN") return <p className="p-8" role="alert">{en ? "You do not have permission to manage users." : "ليس لديك صلاحية إدارة المستخدمين."}</p>;
-  if (!item) return <p className="p-8" role="alert">{en ? "The user could not be found or loaded." : "المستخدم غير موجود أو تعذر تحميله."}</p>;
-  const self = me.data.user.id === item.id; const busy = edit.isPending || role.isPending || status.isPending || reset.isPending; const beginEdit = () => { if (!dirty) { setName(item.name); setEmail(item.email); setDirty(true); } };
-  return <section className="mx-auto max-w-4xl space-y-5 p-8"><header><h1 className="text-3xl font-bold">{t.admin.userDetails}</h1><p>{item.name}</p></header><section className="rounded border p-4"><h2>{en ? "User information" : "بيانات المستخدم"}</h2><dl><dt>{t.admin.email}</dt><dd dir="ltr"><bdi>{item.email}</bdi></dd><dt>{t.admin.role}</dt><dd>{displayEnum(locale, item.role)}</dd><dt>{t.common.status}</dt><dd>{item.isActive ? t.common.active : t.common.inactive}</dd><dt>{t.admin.createdAt}</dt><dd>{formatLocaleDateTime(item.createdAt, locale)}</dd></dl></section><section className="rounded border p-4"><h2>{en ? "Edit details" : "تعديل البيانات"}</h2><form data-testid="user-edit" onSubmit={(event) => { event.preventDefault(); edit.mutate(); }} className="grid gap-3"><label>{t.admin.name}<input required minLength={2} value={formName} onChange={(event) => { beginEdit(); setName(event.target.value); }} className="text-black" /></label><label>{t.admin.email}<input required type="email" value={formEmail} onChange={(event) => { beginEdit(); setEmail(event.target.value); }} className="text-black" /></label><button disabled={busy}>{t.admin.update}</button></form></section><section className="rounded border p-4"><h2>{en ? "Role and status" : "الدور والحالة"}</h2><label>{en ? "Change role" : "تغيير الدور"}<select data-testid="user-role-action" value={item.role} disabled={busy} onChange={(event) => role.mutate(event.target.value as UserRole)} className="ms-2 text-black">{roles.map((value) => <option key={value} value={value}>{displayEnum(locale, value)}</option>)}</select></label><div className="mt-3">{item.isActive ? <button data-testid="user-status-action" disabled={self || busy} onClick={() => setDisableOpen(true)}>{en ? "Disable user" : "تعطيل المستخدم"}</button> : <button data-testid="user-status-action" disabled={busy} onClick={() => status.mutate(true)}>{en ? "Enable user" : "تفعيل المستخدم"}</button>}{self ? <p>{en ? "You cannot disable your current account." : "لا يمكنك تعطيل حسابك الحالي."}</p> : null}</div>{disableOpen ? <div role="alertdialog" aria-modal="true" aria-labelledby="disable-title" className="mt-3 rounded border p-3"><p id="disable-title">{en ? "This will disable the user and revoke active sessions." : "سيتم تعطيل المستخدم وإنهاء جلساته النشطة."}</p><button data-testid="user-disable-confirm" disabled={busy} onClick={() => status.mutate(false)}>{en ? "Confirm disable" : "تأكيد التعطيل"}</button><button data-testid="user-disable-cancel" disabled={busy} onClick={() => setDisableOpen(false)}>{t.common.cancel}</button></div> : null}</section><section className="rounded border p-4"><h2>{t.admin.resetPassword}</h2><form onSubmit={(event) => { event.preventDefault(); reset.mutate(); }}><label>{en ? "New password" : "كلمة المرور الجديدة"}<input data-testid="user-password-reset" required minLength={12} maxLength={512} type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="ms-2 text-black" /></label><button disabled={busy}>{en ? "Reset" : "إعادة التعيين"}</button></form></section><p aria-live="polite" role={edit.isError || role.isError || status.isError || reset.isError ? "alert" : undefined}>{message}</p></section>;
+export default function UserDetail() {
+  return <UserDetailPage />;
 }

@@ -1,0 +1,12 @@
+import type { AdminUserListItem } from "@hhlawyer/types";
+import { ChevronRight, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { AdminTechnicalValue } from "@/components/admin/foundation";
+import { localizePath } from "@/components/providers/LocaleProvider";
+import type { Locale } from "@/i18n/locale";
+import { formatLocaleDate } from "@/i18n/format";
+import { AccountBadge, RoleBadge } from "./UserBadges";
+import { usersContent } from "./users-content";
+import styles from "./Users.module.css";
+
+export function UserRecords({items,locale}:{items:AdminUserListItem[];locale:Locale}){const c=usersContent[locale];return <><div className={styles.desktopTable} data-testid="admin-users-desktop-list"><table><thead><tr><th>{c.name}</th><th>{c.role}</th><th>{c.status}</th><th>{c.created}</th><th><span className={styles.srOnly}>{c.manage}</span></th></tr></thead><tbody>{items.map(user=><tr key={user.id} data-testid={`admin-users-row-${user.id}`}><td><strong>{user.name}</strong><AdminTechnicalValue>{user.email}</AdminTechnicalValue></td><td><RoleBadge locale={locale} role={user.role}/></td><td><AccountBadge active={user.isActive} locale={locale}/></td><td>{formatLocaleDate(user.createdAt,locale)}</td><td><Link aria-label={`${c.manage}: ${user.name}`} data-testid={`admin-users-detail-${user.id}`} href={localizePath(`/admin/users/${user.id}`,locale)}>{c.manage}<ChevronRight aria-hidden="true" size={15}/></Link></td></tr>)}</tbody></table></div><ul className={styles.mobileList} data-testid="admin-users-mobile-list">{items.map(user=><li key={user.id}><article data-testid={`admin-users-card-${user.id}`}><div className={styles.cardHeader}><span className={styles.avatar}><ShieldCheck aria-hidden="true" size={18}/></span><div><strong>{user.name}</strong><AdminTechnicalValue>{user.email}</AdminTechnicalValue></div></div><div className={styles.cardBadges}><RoleBadge locale={locale} role={user.role}/><AccountBadge active={user.isActive} locale={locale}/></div><dl><div><dt>{c.created}</dt><dd>{formatLocaleDate(user.createdAt,locale)}</dd></div></dl><Link aria-label={`${c.manage}: ${user.name}`} data-testid={`admin-users-detail-${user.id}`} href={localizePath(`/admin/users/${user.id}`,locale)}>{c.manage}<ChevronRight aria-hidden="true" size={15}/></Link></article></li>)}</ul></>;}

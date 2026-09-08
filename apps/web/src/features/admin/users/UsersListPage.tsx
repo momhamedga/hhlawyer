@@ -1,0 +1,30 @@
+"use client";
+
+import { RefreshCw, UsersRound } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AdminDataState, AdminPage, AdminPageHeader } from "@/components/admin/foundation";
+import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
+import { formatLocaleNumber } from "@/i18n/format";
+import { adminUsersKeys, createAdminUser, getAdminUsers, type AdminUsersFilters } from "@/lib/api/admin-users";
+import { currentUser } from "@/lib/api/auth";
+import { ApiClientError } from "@/lib/api/client";
+import { CreateUserDialog } from "./CreateUserDialog";
+import { UserRecords } from "./UserRecords";
+import { UsersToolbar } from "./UsersToolbar";
+import { defaultUserFilters, filtersFromSearchParams, filtersToSearchParams, userError } from "./users-model";
+import { usersContent } from "./users-content";
+import styles from "./Users.module.css";
+
+export function UsersListPage(){const locale=useLocale();const c=usersContent[locale];const router=useRouter();const pathname=usePathname();const params=useSearchParams();const client=useQueryClient();const urlFilters=useMemo(()=>filtersFromSearchParams(new URLSearchParams(params.toString())),[params]);const [searchInput,setSearchInput]=useState("");const [search,setSearch]=useState("");const [createOpen,setCreateOpen]=useState(false);const [feedback,setFeedback]=useState("");
+  const me=useQuery({queryKey:["auth","me"],queryFn:currentUser,retry:false});const filters=useMemo(()=>({...urlFilters,...(search?{search}:{})}),[search,urlFilters]);const users=useQuery({enabled:me.data?.user.role==="ADMIN",queryKey:adminUsersKeys.list(filters),queryFn:({signal})=>getAdminUsers(filters,signal),retry:1});
+  useEffect(()=>{const timer=window.setTimeout(()=>setSearch(searchInput.trim()),400);return()=>window.clearTimeout(timer);},[searchInput]);useEffect(()=>{if(me.isError||(me.isSuccess&&!me.data))router.replace(localizePath("/admin/login",locale));},[locale,me.data,me.isError,me.isSuccess,router]);
+  const navigate=(next:AdminUsersFilters)=>{const nextParams=filtersToSearchParams(next);router.replace(nextParams.size?`${pathname}?${nextParams}`:pathname,{scroll:false});};const update=(change:Partial<AdminUsersFilters>)=>navigate({...urlFilters,...change,page:change.page??1});const clear=()=>{setSearchInput("");setSearch("");navigate(defaultUserFilters);};
+  const create=useMutation({mutationFn:createAdminUser,retry:false,onSuccess:async()=>{setCreateOpen(false);setFeedback(c.createdSuccess);await Promise.all([client.invalidateQueries({queryKey:adminUsersKeys.all}),client.invalidateQueries({queryKey:["admin","overview"]})]);},onError:error=>setFeedback(userError(error instanceof ApiClientError?error.error.code:undefined,c))});
+  if(me.isLoading)return <UsersListSkeleton locale={locale}/>;if(!me.data)return null;if(me.data.user.role!=="ADMIN")return <AdminPage><AdminDataState description={c.unauthorized} title={c.forbidden} tone="error"/></AdminPage>;
+  const pagination=users.data?.pagination;const from=pagination&&pagination.total?(pagination.page-1)*pagination.limit+1:0;const to=pagination?Math.min(pagination.page*pagination.limit,pagination.total):0;const activeCount=Number(Boolean(urlFilters.role))+Number(urlFilters.isActive!==undefined)+Number(urlFilters.limit!==20)+Number(urlFilters.sortBy!=="createdAt"||urlFilters.sortOrder!=="desc");
+  return <AdminPage className={styles.page} data-testid="admin-users-list"><AdminPageHeader actions={<CreateUserDialog key={create.data?.id??"new"} error={create.isError?feedback:undefined} locale={locale} onOpenChange={value=>{setFeedback("");setCreateOpen(value);}} onSubmit={value=>{setFeedback("");create.mutate(value);}} open={createOpen} pending={create.isPending}/>} description={c.description} title={c.title}/><UsersToolbar activeCount={activeCount} filters={urlFilters} locale={locale} onChange={update} onClear={clear} onSearch={value=>{setSearchInput(value);if(urlFilters.page!==1)update({page:1});}} search={searchInput}/>{feedback&&!createOpen?<p className={styles.successFeedback} role="status">{feedback}</p>:null}{users.isLoading?<UsersListSkeleton locale={locale} embedded/>:users.isError?<div className={styles.stateWrap}><AdminDataState description={c.genericError} title={c.loadError} tone="error"/><button onClick={()=>void users.refetch()} type="button"><RefreshCw aria-hidden="true" size={16}/>{c.retry}</button></div>:users.data?<section aria-labelledby="users-results" className={styles.results}><div className={styles.resultsHeader}><h2 id="users-results">{c.title}</h2><p>{c.results(formatLocaleNumber(from,locale),formatLocaleNumber(to,locale),formatLocaleNumber(users.data.pagination.total,locale))}</p></div>{users.data.items.length?<><UserRecords items={users.data.items} locale={locale}/><nav aria-label={c.page(formatLocaleNumber(users.data.pagination.page,locale),formatLocaleNumber(users.data.pagination.totalPages,locale))} className={styles.pagination}><button disabled={urlFilters.page<=1} onClick={()=>update({page:urlFilters.page-1})}>{c.previous}</button><p>{c.page(formatLocaleNumber(users.data.pagination.page,locale),formatLocaleNumber(users.data.pagination.totalPages,locale))}</p><button disabled={urlFilters.page>=users.data.pagination.totalPages} onClick={()=>update({page:urlFilters.page+1})}>{c.next}</button></nav></>:<div className={styles.stateWrap}><UsersRound aria-hidden="true" size={24}/><AdminDataState title={searchInput.trim()||activeCount?c.filteredEmpty:c.empty}/>{searchInput.trim()||activeCount?<button onClick={clear}>{c.clear}</button>:null}</div>}</section>:null}</AdminPage>;
+}
+
+export function UsersListSkeleton({embedded=false,locale}:{embedded?:boolean;locale:"ar"|"en"}){const content=<div aria-label={usersContent[locale].loading} aria-busy="true" className={styles.skeleton} data-testid="admin-users-loading"><span/><span/><span/><span/></div>;return embedded?content:<AdminPage>{content}</AdminPage>;}
