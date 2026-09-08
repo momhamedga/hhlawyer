@@ -141,10 +141,15 @@
 }
 
 .technicalValue {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
   direction: ltr;
   unicode-bidi: isolate;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  white-space: normal;
   text-align: start;
 }
 

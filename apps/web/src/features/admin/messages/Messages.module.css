@@ -70,9 +70,9 @@
 .definitionList { display:grid; gap:.9rem; margin-block-start:1rem; }
 .definitionList > div { display:grid; gap:.28rem; }
 .definitionList dt { color:var(--admin-text-muted); font-size:.72rem; font-weight:750; }
-.definitionList dd { overflow-wrap:anywhere; color:var(--admin-text); font-size:.86rem; font-weight:750; }
+.definitionList dd { min-width:0; overflow-wrap:anywhere; unicode-bidi:plaintext; color:var(--admin-text); font-size:.86rem; font-weight:750; }
 .emailLink { display:inline-flex; min-height:2.75rem; align-items:center; gap:.45rem; margin-block-start:1rem; color:var(--admin-text); font-size:.8rem; font-weight:850; text-decoration:underline; text-decoration-color:var(--admin-accent); text-underline-offset:.22rem; }
-.messageSurface > p { margin-block-start:1.15rem; max-width:78ch; overflow-wrap:anywhere; white-space:pre-wrap; color:var(--admin-text); font-size:.95rem; line-height:1.95; }
+.messageSurface > p { margin-block-start:1.15rem; max-width:78ch; overflow-wrap:anywhere; unicode-bidi:plaintext; white-space:pre-wrap; color:var(--admin-text); font-size:.95rem; line-height:1.95; }
 .workflowSurface > p { margin-block-start:.55rem; color:var(--admin-text-muted); font-size:.78rem; line-height:1.6; }
 .actions { display:grid; gap:.85rem; margin-block-start:1rem; }
 .actionButtons { display:grid; gap:.55rem; }

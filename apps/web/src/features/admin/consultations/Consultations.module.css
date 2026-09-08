@@ -64,7 +64,7 @@
 .metadataList, .definitionList, .appointmentGrid { display:grid; gap:.9rem; margin-block-start:1rem; }
 .metadataList > div, .definitionList > div, .appointmentGrid > div { display:grid; gap:.28rem; }
 .metadataList dt, .definitionList dt, .appointmentGrid dt { color:var(--admin-text-muted); font-size:.72rem; font-weight:750; }
-.metadataList dd, .definitionList dd, .appointmentGrid dd { overflow-wrap:anywhere; color:var(--admin-text); font-size:.86rem; font-weight:750; }
+.metadataList dd, .definitionList dd, .appointmentGrid dd { min-width:0; overflow-wrap:anywhere; unicode-bidi:plaintext; color:var(--admin-text); font-size:.86rem; font-weight:750; }
 .sectionHeading { display:flex; align-items:center; gap:.65rem; }
 .sectionIcon { display:inline-grid; width:2.15rem; height:2.15rem; flex:none; place-items:center; border-radius:var(--admin-radius-md); background:color-mix(in srgb,var(--admin-accent) 12%,var(--admin-surface-raised)); color:var(--admin-accent); }
 .appointmentSurface { border-inline-start:3px solid var(--admin-accent); }
@@ -74,9 +74,9 @@
 .informationGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--admin-section-gap); }
 .contactLink { min-height:2.75rem; width:max-content; max-width:100%; color:var(--admin-text); text-decoration:underline; text-decoration-color:var(--admin-accent); text-underline-offset:.22rem; }
 .contactLink bdi { overflow-wrap:anywhere; }
-.serviceName { margin-block-start:1rem; color:var(--admin-text); font-size:1rem; font-weight:850; line-height:1.55; }
+.serviceName { margin-block-start:1rem; overflow-wrap:anywhere; unicode-bidi:plaintext; color:var(--admin-text); font-size:1rem; font-weight:850; line-height:1.55; }
 .serviceSlug { display:block; margin-block-start:.35rem; color:var(--admin-text-subtle); font-size:.7rem; }
-.messageSurface > p { margin-block-start:1rem; max-width:78ch; overflow-wrap:anywhere; white-space:pre-wrap; color:var(--admin-text); font-size:.92rem; line-height:1.9; }
+.messageSurface > p { margin-block-start:1rem; max-width:78ch; overflow-wrap:anywhere; unicode-bidi:plaintext; white-space:pre-wrap; color:var(--admin-text); font-size:.92rem; line-height:1.9; }
 .backLink { display:inline-flex; min-height:2.75rem; align-items:center; margin-block-start:1rem; color:var(--admin-text); font-weight:800; text-decoration:underline; text-decoration-color:var(--admin-accent); }
 @media(max-width:75rem){.desktopFilterFields{grid-template-columns:repeat(3,minmax(0,1fr));}.desktopTable th,.desktopTable td{padding:.75rem !important}.desktopTable th:nth-child(6),.desktopTable td:nth-child(6){display:none}.detailGrid{grid-template-columns:minmax(0,1.6fr) minmax(15rem,.8fr)}}
 @media(max-width:64rem){.desktopTable th:nth-child(3),.desktopTable td:nth-child(3){display:none}.informationGrid{grid-template-columns:1fr}}
