@@ -78,13 +78,14 @@ test("ADMIN manages contact and audit persists", async ({ page }) => {
   const search = page.getByTestId("contact-search");
   await expect(search).toBeVisible();
   await search.fill(`${marker} UNREAD`);
-  const row = page.locator(`[data-contact-id="${unreadId}"]`);
+  const row = page.getByTestId("messages-desktop-list").locator(`[data-contact-id="${unreadId}"]`);
   await expect(row).toBeVisible();
   await row.getByTestId("contact-view").click();
 
   await expect(page.getByText("<b>PHASE6B3_LITERAL</b>")).toBeVisible();
   await expect(page.locator("b")).toHaveCount(0);
   await page.getByTestId("contact-status-action-READ").click();
+  await page.getByTestId("contact-status-confirm").click();
   await expect(page.getByTestId("contact-status")).toHaveAttribute("data-status", "READ");
   await expect.poll(async () => (await db.contactMessage.findUnique({ where: { id: unreadId } }))?.status).toBe("READ");
 
@@ -97,6 +98,7 @@ test("STAFF manages and LAWYER is read only", async ({ page }) => {
   await login(page, `${marker}.staff@example.test`);
   await page.goto(`/admin/contacts/${readId}`);
   await page.getByTestId("contact-status-action-REPLIED").click();
+  await page.getByTestId("contact-status-confirm").click();
   await expect(page.getByTestId("contact-status")).toHaveAttribute("data-status", "REPLIED");
   await expect.poll(async () => (await db.contactMessage.findUnique({ where: { id: readId } }))?.status).toBe("REPLIED");
 
