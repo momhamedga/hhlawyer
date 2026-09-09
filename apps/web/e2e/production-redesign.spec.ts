@@ -31,6 +31,7 @@ test("editorial public redesign keeps images, service index, theme, locale, and 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByTestId("homepage-services-index").locator("a").first()).toBeVisible();
     await expect(page.getByTestId("homepage-founder")).toBeVisible();
+    await expect(page.getByTestId("homepage-team")).toBeVisible();
     await expect(page.getByTestId("homepage-uae-presence")).toBeVisible();
     await expect(page.getByTestId("homepage-legal-journey")).toBeVisible();
     await expect(page.getByAltText("هندسة مكتب قانوني معاصر")).toBeVisible();
@@ -49,7 +50,7 @@ test("homepage editorial motion remains accessible with reduced motion", async (
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/en");
-  for (const testId of ["homepage-services-index", "homepage-founder", "homepage-uae-presence", "homepage-legal-journey"]) {
+  for (const testId of ["homepage-services-index", "homepage-founder", "homepage-team", "homepage-uae-presence", "homepage-legal-journey"]) {
     const section = page.getByTestId(testId);
     await section.scrollIntoViewIfNeeded();
     await expect(section).toBeVisible();

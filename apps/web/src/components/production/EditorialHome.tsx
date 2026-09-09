@@ -15,6 +15,7 @@ import { HeroPortraitRotation } from "./HeroPortraitRotation";
 import { LegalJourney } from "./LegalJourney";
 import { MatterFinderTeaser } from "@/components/legal-matter-finder/MatterFinderTeaser";
 import styles from "./EditorialHome.module.css";
+import { TeamSection } from "./TeamSection";
 import { UaeLegalPresence } from "./UaeLegalPresence";
 import { useHydrationSafeReducedMotion } from "./useHydrationSafeReducedMotion";
 
@@ -66,6 +67,7 @@ export function EditorialHome() {
     <MatterFinderTeaser locale={locale} />
 
     <FounderSection locale={locale} profileHref={go("/about")} />
+    <TeamSection locale={locale} />
     <UaeLegalPresence locale={locale} />
     <LegalJourney locale={locale} />
   </div>;
