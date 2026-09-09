@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { consultationsContent } from "../src/features/admin/consultations/consultations-content";
 import { formatConsultationTime, formatLocaleDate, formatLocaleDateTime } from "../src/i18n/format";
 import { serviceContent } from "../src/i18n/service-content";
+import { selectValue } from "./select-helpers";
 
 const service = { id: "consultation-redesign-service", slug: "criminal", name: "Criminal Law", description: "Test", sortOrder: 1 };
 const base = {
@@ -45,16 +46,16 @@ test("consultation work queue uses bounded URL filters, search, sorting, paginat
   await expect(page.getByText(formatLocaleDate(base.preferredDate, "en"), { exact: true }).first()).toBeVisible();
   await expect(page.getByText(formatConsultationTime(base.preferredTime, "en"), { exact: true }).first()).toBeVisible();
 
-  await page.getByTestId("consultation-status-filter").selectOption("PENDING");
+  await selectValue(page.getByTestId("consultation-status-filter"), "PENDING");
   await expect.poll(() => requests.at(-1)?.searchParams.get("status")).toBe("PENDING");
-  await page.getByTestId("consultation-service-filter").selectOption(service.id);
+  await selectValue(page.getByTestId("consultation-service-filter"), service.id);
   await expect.poll(() => requests.at(-1)?.searchParams.get("serviceId")).toBe(service.id);
   await page.getByTestId("consultation-date-from").fill("2099-12-01");
   await page.getByTestId("consultation-date-to").fill("2099-12-31");
   await expect.poll(() => requests.at(-1)?.searchParams.get("dateTo")).toBe("2099-12-31");
-  await page.getByTestId("consultation-sort").selectOption("preferredDate:asc");
+  await selectValue(page.getByTestId("consultation-sort"), "preferredDate:asc");
   await expect.poll(() => `${requests.at(-1)?.searchParams.get("sortBy")}:${requests.at(-1)?.searchParams.get("sortOrder")}`).toBe("preferredDate:asc");
-  await page.getByTestId("consultation-page-size").selectOption("10");
+  await selectValue(page.getByTestId("consultation-page-size"), "10");
   await expect.poll(() => requests.at(-1)?.searchParams.get("limit")).toBe("10");
   await page.getByLabel(copy.searchLabel).fill(base.referenceNumber);
   await expect.poll(() => requests.at(-1)?.searchParams.get("search"), { timeout: 3_000 }).toBe(base.referenceNumber);
@@ -84,7 +85,7 @@ test("consultation list distinguishes loading, errors, no requests, and filtered
   recover = true;
   await page.getByRole("button", { name: copy.retry }).click();
   await expect(page.getByText(copy.emptyTitle)).toBeVisible();
-  await page.getByTestId("consultation-status-filter").selectOption("COMPLETED");
+  await selectValue(page.getByTestId("consultation-status-filter"), "COMPLETED");
   await expect(page.getByText(copy.filteredEmptyTitle)).toBeVisible();
   await expect(page.getByRole("button", { name: copy.clearFilters }).first()).toBeVisible();
 });

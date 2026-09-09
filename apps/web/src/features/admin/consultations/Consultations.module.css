@@ -9,7 +9,7 @@
 .searchControl input { padding-inline-start:2.45rem !important; background:var(--admin-surface-raised) !important; border-color:var(--admin-border-strong) !important; color:var(--admin-text) !important; }
 .desktopFilterFields { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:.75rem; }
 .desktopFilterFields label, .mobileFilterFields label { display:grid; gap:.4rem; }
-.desktopFilterFields input, .desktopFilterFields select, .mobileFilterFields input, .mobileFilterFields select { background:var(--admin-surface-raised); border-color:var(--admin-border-strong); color:var(--admin-text); font-size:.875rem; }
+.desktopFilterFields input, .desktopFilterFields button[data-value], .mobileFilterFields input, .mobileFilterFields button[data-value] { background:var(--admin-surface-raised); border-color:var(--admin-border-strong); color:var(--admin-text); font-size:.875rem; }
 .mobileFilterTrigger { display:none; color:var(--admin-text); border-color:var(--admin-border-strong); background:var(--admin-surface-raised); }
 .filterCount { display:inline-grid; min-width:1.35rem; height:1.35rem; place-items:center; border-radius:999px; background:var(--admin-accent); color:var(--admin-accent-foreground); font-size:.7rem; }
 .activeFilterBar { display:flex; align-items:center; justify-content:space-between; gap:1rem; border-block-start:1px solid var(--admin-border); padding-block-start:.8rem; color:var(--admin-text-muted); font-size:.78rem; font-weight:750; }

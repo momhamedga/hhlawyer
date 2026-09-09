@@ -16,7 +16,7 @@
   font-weight: 800;
 }
 
-.rangeControl select {
+.rangeControl button[data-value] {
   min-height: var(--admin-control-size);
   border-color: var(--admin-border-strong);
   background: var(--admin-surface-raised);

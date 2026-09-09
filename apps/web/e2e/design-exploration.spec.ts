@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { selectValue } from "./select-helpers";
 
 const directions = ["01", "02", "03"] as const;
 
@@ -31,7 +32,7 @@ test("preview routes support theme changes, safe filters, and mobile without doc
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByLabel("Search matters").fill("C-2048");
   await expect(page.getByText("Commercial consultation")).toBeVisible();
-  await page.getByLabel("Filter status").selectOption("In review");
+  await selectValue(page.getByLabel("Filter status"), "In review");
   await expect(page.getByText("Commercial consultation")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByTestId("preview-theme-light").click();

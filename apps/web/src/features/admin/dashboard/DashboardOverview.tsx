@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminPage, AdminPageHeader } from "@/components/admin/foundation";
 import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
-import { Select } from "@/components/ui";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { formatLocaleDate } from "@/i18n/format";
 import { currentUser } from "@/lib/api/auth";
 import { adminDashboardKeys, getAdminDashboardOverview } from "@/lib/api/admin-dashboard";
@@ -44,7 +44,7 @@ export function DashboardOverview() {
 
   if (user.isLoading || !user.data || !isAdmin) return null;
   const data = dashboard.data;
-  const rangeControl = <label className={styles.rangeControl}><span>{copy.rangeLabel}</span><Select data-testid="dashboard-range" value={range} onChange={(event) => setRange(event.target.value as DashboardRange)}>{(Object.keys(copy.ranges) as DashboardRange[]).map((value) => <option key={value} value={value}>{copy.ranges[value]}</option>)}</Select></label>;
+  const rangeControl = <label className={styles.rangeControl}><span>{copy.rangeLabel}</span><Select value={range} onValueChange={(value) => setRange(value as DashboardRange)}><SelectTrigger aria-label={copy.rangeLabel} data-testid="dashboard-range"><SelectValue /></SelectTrigger><SelectContent>{(Object.keys(copy.ranges) as DashboardRange[]).map((value) => <SelectItem key={value} value={value}>{copy.ranges[value]}</SelectItem>)}</SelectContent></Select></label>;
 
   return (
     <AdminPage className={styles.dashboard} data-testid="admin-dashboard">

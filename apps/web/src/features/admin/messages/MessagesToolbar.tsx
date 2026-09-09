@@ -4,7 +4,7 @@ import type { ContactMessageStatus } from "@hhlawyer/types";
 import { Filter, Search } from "lucide-react";
 import { useState } from "react";
 import { AdminDialogContent, AdminToolbar } from "@/components/admin/foundation";
-import { Button, Dialog, DialogDescription, DialogTitle, DialogTrigger, Input, Select } from "@/components/ui";
+import { Button, Dialog, DialogDescription, DialogTitle, DialogTrigger, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { displayEnum } from "@/i18n/format";
 import type { Locale } from "@/i18n/locale";
 import type { ContactFilters } from "@/lib/api/admin-contacts";
@@ -17,9 +17,9 @@ type FilterChanges = Partial<Omit<ContactFilters, "search">>;
 function FilterFields({ filters, locale, onChange }: { filters: ContactFilters; locale: Locale; onChange: (changes: FilterChanges) => void }) {
   const copy = messagesContent[locale];
   return <>
-    <label><span>{copy.status}</span><Select data-testid="message-status-filter" value={filters.status ?? ""} onChange={(event) => onChange({ status: (event.target.value || undefined) as ContactMessageStatus | undefined })}><option value="">{copy.allStatuses}</option>{messageStatuses.map((status) => <option key={status} value={status}>{displayEnum(locale, status)}</option>)}</Select></label>
-    <label><span>{copy.sort}</span><Select data-testid="message-sort" value={`${filters.sortBy}:${filters.sortOrder}`} onChange={(event) => { const [sortBy, sortOrder] = event.target.value.split(":") as [ContactFilters["sortBy"], ContactFilters["sortOrder"]]; onChange({ sortBy, sortOrder }); }}><option value="createdAt:desc">{copy.newest}</option><option value="createdAt:asc">{copy.oldest}</option><option value="status:asc">{copy.statusAscending}</option></Select></label>
-    <label><span>{copy.pageSize}</span><Select data-testid="message-page-size" value={filters.limit} onChange={(event) => onChange({ limit: Number(event.target.value) })}><option value={10}>10</option><option value={20}>20</option><option value={50}>50</option></Select></label>
+    <label><span>{copy.status}</span><Select value={filters.status ?? ""} onValueChange={(value) => onChange({ status: (value || undefined) as ContactMessageStatus | undefined })}><SelectTrigger aria-label={copy.status} data-testid="message-status-filter"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="">{copy.allStatuses}</SelectItem>{messageStatuses.map((status) => <SelectItem key={status} value={status}>{displayEnum(locale, status)}</SelectItem>)}</SelectContent></Select></label>
+    <label><span>{copy.sort}</span><Select value={`${filters.sortBy}:${filters.sortOrder}`} onValueChange={(value) => { const [sortBy, sortOrder] = value.split(":") as [ContactFilters["sortBy"], ContactFilters["sortOrder"]]; onChange({ sortBy, sortOrder }); }}><SelectTrigger aria-label={copy.sort} data-testid="message-sort"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">{copy.newest}</SelectItem><SelectItem value="createdAt:asc">{copy.oldest}</SelectItem><SelectItem value="status:asc">{copy.statusAscending}</SelectItem></SelectContent></Select></label>
+    <label><span>{copy.pageSize}</span><Select value={String(filters.limit)} onValueChange={(value) => onChange({ limit: Number(value) })}><SelectTrigger aria-label={copy.pageSize} data-testid="message-page-size"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="10">10</SelectItem><SelectItem value="20">20</SelectItem><SelectItem value="50">50</SelectItem></SelectContent></Select></label>
   </>;
 }
 

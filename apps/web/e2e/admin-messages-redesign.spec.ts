@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { messagesContent } from "../src/features/admin/messages/messages-content";
 import { formatLocaleDateTime } from "../src/i18n/format";
+import { selectValue } from "./select-helpers";
 
 const base = {
   id: "message-redesign-unread",
@@ -37,12 +38,12 @@ test("message inbox uses bounded URL filters, ephemeral search, sorting, paginat
   await expect(page.getByTestId("messages-desktop-list").getByText(copy.unreadAttention)).toBeVisible();
   await expect(page.getByText(formatLocaleDateTime(base.createdAt, "en"), { exact: true }).first()).toBeVisible();
 
-  await page.getByTestId("message-status-filter").selectOption("UNREAD");
+  await selectValue(page.getByTestId("message-status-filter"), "UNREAD");
   await expect(page).toHaveURL(/status=UNREAD/);
   await expect.poll(() => requests.at(-1)?.searchParams.get("status")).toBe("UNREAD");
-  await page.getByTestId("message-sort").selectOption("createdAt:asc");
+  await selectValue(page.getByTestId("message-sort"), "createdAt:asc");
   await expect.poll(() => `${requests.at(-1)?.searchParams.get("sortBy") ?? "createdAt"}:${requests.at(-1)?.searchParams.get("sortOrder")}`).toBe("createdAt:asc");
-  await page.getByTestId("message-page-size").selectOption("10");
+  await selectValue(page.getByTestId("message-page-size"), "10");
   await expect.poll(() => requests.at(-1)?.searchParams.get("limit")).toBe("10");
   await page.getByLabel(copy.searchLabel).fill(base.email);
   await expect.poll(() => requests.at(-1)?.searchParams.get("search"), { timeout: 3_000 }).toBe(base.email);
@@ -50,7 +51,7 @@ test("message inbox uses bounded URL filters, ephemeral search, sorting, paginat
   await page.getByTestId("admin-messages-list").getByRole("button", { name: copy.next, exact: true }).click();
   await expect(page).toHaveURL(/page=2/);
   await expect.poll(() => requests.at(-1)?.searchParams.get("page")).toBe("2");
-  await page.getByTestId("message-status-filter").selectOption("READ");
+  await selectValue(page.getByTestId("message-status-filter"), "READ");
   await expect(page).not.toHaveURL(/page=2/);
   expect(requests.every((url) => Number(url.searchParams.get("limit") ?? 20) <= 50)).toBe(true);
   const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
@@ -72,7 +73,7 @@ test("message inbox distinguishes loading, errors, empty inbox, and filtered emp
   recover = true;
   await page.getByRole("button", { name: copy.retry }).click();
   await expect(page.getByText(copy.emptyTitle)).toBeVisible();
-  await page.getByTestId("message-status-filter").selectOption("ARCHIVED");
+  await selectValue(page.getByTestId("message-status-filter"), "ARCHIVED");
   await expect(page.getByText(copy.filteredEmptyTitle)).toBeVisible();
   await expect(page.getByRole("button", { name: copy.clearFilters }).first()).toBeVisible();
 });

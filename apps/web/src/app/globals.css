@@ -206,7 +206,6 @@
 
   button,
   input,
-  select,
   textarea {
     font: inherit;
   }
@@ -331,11 +330,11 @@ html::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 [data-admin-root] #admin-main fieldset { padding: 1rem; }
 [data-admin-root] #admin-main label { display: grid; gap: 0.4rem; color: var(--admin-text); font-size: 0.875rem; font-weight: 700; }
 [data-admin-root] #admin-main input:not([type="checkbox"]),
-[data-admin-root] #admin-main select,
+[data-admin-root] #admin-main button[data-value],
 [data-admin-root] #admin-main textarea { min-height: var(--admin-control-size); width: 100%; border: 1px solid var(--admin-border-strong); border-radius: var(--admin-radius-md); background: var(--admin-surface-raised); color: var(--admin-text); padding: 0.5rem 0.75rem; font-size: 1rem; }
 [data-admin-root] #admin-main textarea { min-height: 7rem; }
 [data-admin-root] #admin-main input:focus-visible,
-[data-admin-root] #admin-main select:focus-visible,
+[data-admin-root] #admin-main button[data-value]:focus-visible,
 [data-admin-root] #admin-main textarea:focus-visible,
 [data-admin-root] #admin-main button:focus-visible,
 [data-admin-root] #admin-main a:focus-visible { outline: 2px solid var(--admin-focus); outline-offset: 2px; }

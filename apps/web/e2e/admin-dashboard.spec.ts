@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createTestPrismaClient } from "../../api/src/lib/test-database";
 import { hashPassword } from "../../api/src/modules/auth/auth.service";
+import { selectValue } from "./select-helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -95,7 +96,7 @@ test("ADMIN sees real bounded operational data, localized statuses, and safe nav
 
   for (const range of ["7d", "90d"] as const) {
     const request = page.waitForResponse((item) => item.url().includes(`/admin/overview?range=${range}`) && item.request().method() === "GET");
-    await page.getByTestId("dashboard-range").selectOption(range);
+    await selectValue(page.getByTestId("dashboard-range"), range);
     expect((await request).status()).toBe(200);
   }
   await page.getByTestId("dashboard-consultations-card").click();
