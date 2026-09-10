@@ -112,6 +112,15 @@ function desktopNavigation(page: Page) {
   return page.getByTestId("admin-desktop-navigation");
 }
 
+async function focusWithKeyboard(page: Page, target: ReturnType<Page["getByTestId"]>) {
+  await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
+  for (let index = 0; index < 30; index += 1) {
+    await page.keyboard.press("Tab");
+    if (await target.evaluate((element) => document.activeElement === element)) return;
+  }
+  throw new Error("Target was not reachable through sequential keyboard navigation.");
+}
+
 test("ADMIN sees the complete IA, actual identity, and active detail hierarchy", async ({ page }) => {
   await mockAdminApi(page, "ADMIN");
   await page.goto(`/en/admin/consultations/${consultation.id}`);
@@ -175,6 +184,93 @@ test("account logout uses the existing endpoint and returns to localized login",
   expect((await responsePromise).status()).toBe(200);
   await page.waitForURL("**/en/admin/login");
 });
+
+test("desktop sidebar surface and sticky inner content cover long and short pages", async ({ page }) => {
+  await mockAdminApi(page, "ADMIN");
+
+  for (const item of [
+    { locale: "en", width: 1440, expectedHref: "/en" },
+    { locale: "ar", width: 1024, expectedHref: "/ar" },
+  ] as const) {
+    await page.setViewportSize({ width: item.width, height: 900 });
+    await page.goto(`/${item.locale}/admin`);
+    await expect(page.getByTestId("admin-dashboard")).toBeVisible();
+
+    const sidebar = page.getByTestId("admin-sidebar");
+    const inner = page.getByTestId("admin-sidebar-inner");
+    const back = page.getByTestId("admin-desktop-back-to-website");
+    await expect(back).toHaveAttribute("href", item.expectedHref);
+    await expect(back).toHaveText(item.locale === "ar" ? "العودة إلى الموقع" : "Back to website");
+    await expect(page.getByTestId("admin-mobile-back-to-website")).toBeHidden();
+
+    const sideBox = await sidebar.boundingBox();
+    expect(sideBox).not.toBeNull();
+    if (item.locale === "en") expect(sideBox!.x).toBeLessThanOrEqual(1);
+    else expect(sideBox!.x + sideBox!.width).toBeGreaterThanOrEqual(item.width - 1);
+
+    await focusWithKeyboard(page, back);
+    await expect(back).toBeFocused();
+    expect(await back.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+
+    await page.locator("main#admin-main").evaluate((element) => { element.style.minHeight = "2600px"; });
+    const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    expect(maxScroll).toBeGreaterThan(900);
+
+    for (const scrollTop of [0, Math.floor(maxScroll / 2), maxScroll]) {
+      await page.evaluate((value) => scrollTo(0, value), scrollTop);
+      await page.waitForTimeout(50);
+      const coverage = await page.evaluate((locale) => {
+        const sticky = document.querySelector('[data-testid="admin-sidebar-inner"]')!.getBoundingClientRect();
+        const x = locale === "ar" ? document.documentElement.clientWidth - 4 : 4;
+        const hit = document.elementFromPoint(x, innerHeight - 2);
+        return {
+          innerBottom: sticky.bottom,
+          innerTop: sticky.top,
+          sidebarAtViewportBottom: Boolean(hit?.closest('[data-testid="admin-sidebar"]')),
+          viewportHeight: innerHeight,
+        };
+      }, item.locale);
+      expect(coverage.innerTop).toBeGreaterThanOrEqual(-1);
+      expect(coverage.innerBottom).toBeGreaterThanOrEqual(coverage.viewportHeight - 1);
+      expect(coverage.sidebarAtViewportBottom).toBe(true);
+    }
+
+    await page.goto(`/${item.locale}/admin/contacts/${contact.id}`);
+    await expect(page.getByTestId("admin-message-detail")).toBeVisible();
+    const shortCoverage = await inner.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return { bottom: bounds.bottom, top: bounds.top, viewportHeight: innerHeight };
+    });
+    expect(shortCoverage.top).toBeGreaterThanOrEqual(-1);
+    expect(shortCoverage.bottom).toBeGreaterThanOrEqual(shortCoverage.viewportHeight - 1);
+  }
+});
+
+for (const locale of ["en", "ar"] as const) {
+  test(`${locale.toUpperCase()} mobile sheet exposes one locale-preserving Back to website action`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 780 });
+    await mockAdminApi(page, "ADMIN");
+    await page.goto(`/${locale}/admin/contacts`);
+    await page.getByTestId("admin-mobile-nav-trigger").click();
+
+    const mobileBack = page.getByTestId("admin-mobile-back-to-website");
+    await expect(mobileBack).toBeVisible();
+    await expect(mobileBack).toHaveAttribute("href", `/${locale}`);
+    await expect(mobileBack).toHaveText(locale === "ar" ? "العودة إلى الموقع" : "Back to website");
+    expect(await page.locator('[data-testid$="-back-to-website"]').evaluateAll((elements) => elements.filter((element) => {
+      const style = getComputedStyle(element);
+      return style.display !== "none" && style.visibility !== "hidden" && element.getClientRects().length > 0;
+    }).length)).toBe(1);
+    await focusWithKeyboard(page, mobileBack);
+    await expect(mobileBack).toBeFocused();
+    expect(await mobileBack.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    await mobileBack.click();
+    await page.waitForURL(`**/${locale}`);
+    await expect(page.getByTestId("admin-mobile-sheet")).toHaveCount(0);
+  });
+}
 
 for (const locale of ["en", "ar"] as const) {
   test(`${locale.toUpperCase()} mobile sheet traps focus, locks scroll, closes with Escape, and enters from inline-start`, async ({ page }) => {

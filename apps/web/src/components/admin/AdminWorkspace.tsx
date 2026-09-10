@@ -3,6 +3,7 @@
 import type { AuthUser, UserRole } from "@hhlawyer/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowUpRight,
   CalendarDays,
   ContactRound,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const shellCopy = {
     account: "الحساب",
     accountDescription: "إعدادات الحساب ومساحة الإدارة",
     administration: "لوحة الإدارة",
+    backToWebsite: "العودة إلى الموقع",
     breadcrumb: "مسار الإدارة",
     close: "إغلاق",
     loading: "جارٍ التحقق من الجلسة…",
@@ -62,6 +64,7 @@ const shellCopy = {
     account: "Account",
     accountDescription: "Account and administration workspace settings",
     administration: "Administration",
+    backToWebsite: "Back to website",
     breadcrumb: "Administration breadcrumb",
     close: "Close",
     loading: "Checking session…",
@@ -212,6 +215,20 @@ function Navigation({ locale, onNavigate, pathname, role, variant }: {
   );
 }
 
+function BackToWebsite({ locale, onNavigate, variant }: { locale: Locale; onNavigate?: () => void; variant: "desktop" | "mobile" }) {
+  return (
+    <Link
+      className={styles.backToWebsite}
+      data-testid={`admin-${variant}-back-to-website`}
+      href={localizePath("/", locale)}
+      onClick={onNavigate}
+    >
+      <ArrowUpRight aria-hidden="true" size={17} />
+      <span>{shellCopy[locale].backToWebsite}</span>
+    </Link>
+  );
+}
+
 function AccountPanel({ id, locale, logoutError, logoutPending, onLocale, onLogout, user }: {
   id: string;
   locale: Locale;
@@ -326,11 +343,16 @@ function AuthenticatedWorkspace({ children, locale, pathname }: { children: Reac
     <div className={styles.workspace} data-admin-root>
       <a className={styles.skipLink} href="#admin-main">{copy.skip}</a>
       <aside className={styles.sidebar} data-testid="admin-sidebar">
-        <Brand href={home} locale={locale} />
-        <Navigation locale={locale} pathname={pathname} role={user.role} variant="desktop" />
-        <div className={styles.sidebarAccount} data-testid="admin-sidebar-identity">
-          <Identity locale={locale} user={user} />
-          <bdi dir="ltr">{user.email}</bdi>
+        <div className={styles.sidebarInner} data-testid="admin-sidebar-inner">
+          <Brand href={home} locale={locale} />
+          <Navigation locale={locale} pathname={pathname} role={user.role} variant="desktop" />
+          <div className={styles.sidebarUtilities}>
+            <BackToWebsite locale={locale} variant="desktop" />
+          </div>
+          <div className={styles.sidebarAccount} data-testid="admin-sidebar-identity">
+            <Identity locale={locale} user={user} />
+            <bdi dir="ltr">{user.email}</bdi>
+          </div>
         </div>
       </aside>
 
@@ -360,6 +382,9 @@ function AuthenticatedWorkspace({ children, locale, pathname }: { children: Reac
             <DialogDescription className={styles.visuallyHidden}>{copy.mobileDescription}</DialogDescription>
             <Brand href={home} locale={locale} />
             <Navigation locale={locale} onNavigate={() => setMobileOpen(false)} pathname={pathname} role={user.role} variant="mobile" />
+            <div className={styles.mobileUtilities}>
+              <BackToWebsite locale={locale} onNavigate={() => setMobileOpen(false)} variant="mobile" />
+            </div>
             <AccountPanel id="admin-mobile-account" {...accountProps} />
           </AdminDialogContent>
         </Dialog>
