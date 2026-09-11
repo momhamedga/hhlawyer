@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
-import type { PrismaClient, User, UserRole } from "@prisma/client";
+import { Prisma, type PrismaClient, type User, type UserRole } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../middleware/error-handler.js";
@@ -18,16 +18,39 @@ export async function hashPassword(password: string) { return bcrypt.hash(passwo
 export async function signAccessToken(user: SafeUser) { return new SignJWT({ role: user.role }).setProtectedHeader({ alg: "HS256" }).setSubject(user.id).setIssuer("hhlawyer-api").setAudience("hhlawyer-admin").setExpirationTime(`${env.ACCESS_TOKEN_TTL_MINUTES}m`).sign(secret); }
 export async function verifyAccessToken(token: string) { const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"], issuer: "hhlawyer-api", audience: "hhlawyer-admin" }); return { userId: payload.sub!, role: payload.role as UserRole }; }
 
+async function recordFailedLogin(userId: string, now: Date, metadata: { ip?: string; userAgent?: string }, database: PrismaClient) {
+  const lockUntil = new Date(now.getTime() + lockMs);
+  const states = await database.$queryRaw<Array<{ failedLoginAttempts: number; lockedUntil: Date | null }>>(Prisma.sql`
+    UPDATE "User"
+    SET
+      "failedLoginAttempts" = CASE
+        WHEN "lockedUntil" IS NOT NULL AND "lockedUntil" <= ${now} THEN 1
+        ELSE "failedLoginAttempts" + 1
+      END,
+      "lockedUntil" = CASE
+        WHEN (
+          CASE
+            WHEN "lockedUntil" IS NOT NULL AND "lockedUntil" <= ${now} THEN 1
+            ELSE "failedLoginAttempts" + 1
+          END
+        ) >= 5 THEN ${lockUntil}
+        ELSE NULL
+      END,
+      "updatedAt" = ${now}
+    WHERE "id" = ${userId}
+      AND ("lockedUntil" IS NULL OR "lockedUntil" <= ${now})
+    RETURNING "failedLoginAttempts", "lockedUntil"
+  `);
+  const state = states[0];
+  if (state) await audit(database, userId, state.lockedUntil ? "AUTH_ACCOUNT_LOCKED" : "AUTH_LOGIN_FAILED", metadata);
+}
+
 export async function login(email: string, password: string, metadata: { ip?: string; userAgent?: string }, database: PrismaClient = prisma) {
   const user = await database.user.findUnique({ where: { email } });
   const match = await bcrypt.compare(password, user?.passwordHash ?? dummyHash);
   const now = new Date();
   if (!user || !match || !user.isActive || (user.lockedUntil && user.lockedUntil > now)) {
-    if (user && (!user.lockedUntil || user.lockedUntil <= now)) {
-      const attempts = user.failedLoginAttempts + 1;
-      await database.user.update({ where: { id: user.id }, data: { failedLoginAttempts: attempts, lockedUntil: attempts >= 5 ? new Date(Date.now() + lockMs) : null } });
-      await audit(database, user.id, attempts >= 5 ? "AUTH_ACCOUNT_LOCKED" : "AUTH_LOGIN_FAILED", metadata);
-    }
+    if (user) await recordFailedLogin(user.id, now, metadata, database);
     throw new AppError(401, "INVALID_CREDENTIALS", "Invalid credentials.");
   }
   const safe = toSafeUser(user);
