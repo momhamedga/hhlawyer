@@ -1,15 +1,41 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { calendarDateInTimeZone, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
+import { CONSULTATION_BOOKING_DAY_COUNT, calendarDateInTimeZone, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
 import { createApp } from "../../app.js";
 import { createTestPrismaClient } from "../../lib/test-database.js";
+import type { EmailNotifier } from "../../services/email/email.types.js";
 import { formatConsultationReference } from "./consultations.service.js";
 
 const marker = `PHASE3B_TEST_${Date.now()}`;
 const testDatabase = createTestPrismaClient();
-const app = createApp({ database: testDatabase, consultationRateLimit: 100 });
-const rateLimitedApp = createApp({ database: testDatabase, consultationRateLimit: 5 });
+let consultationNotificationAttempts = 0;
+const notifier: EmailNotifier = {
+  provider: "test",
+  async sendContactNotification() {},
+  async sendConsultationNotification() { consultationNotificationAttempts += 1; },
+};
+const app = createApp({ database: testDatabase, consultationRateLimit: 100, notifier });
+const rateLimitedApp = createApp({ database: testDatabase, consultationRateLimit: 5, notifier });
 let serviceId = "";
+
+const boundaryNow = new Date("2026-09-06T20:30:00.000Z");
+const boundaryDates = consultationCalendarDates(boundaryNow);
+
+function offsetCalendarDate(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+async function withBoundaryClock<T>(action: () => Promise<T>) {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(boundaryNow);
+  try {
+    return await action();
+  } finally {
+    vi.useRealTimers();
+  }
+}
 
 function validPayload(suffix = "valid") {
   return {
@@ -17,7 +43,7 @@ function validPayload(suffix = "valid") {
     name: `${marker}_${suffix}`,
     email: `${suffix}.${Date.now()}@example.test`,
     phone: "+971 50 123 4567",
-    preferredDate: "2099-12-31",
+    preferredDate: consultationCalendarDates()[3]!,
     preferredTime: "09:00 AM",
     message: "Integration test consultation.",
     website: "",
@@ -43,14 +69,71 @@ describe("consultation booking API", () => {
   });
 
   it("offers the Dubai business date when the visitor-local calendar is still on the prior day", () => {
-    const now = new Date("2026-09-06T20:30:00.000Z");
-    const visitorDate = calendarDateInTimeZone(now, "America/New_York");
-    const [businessDate] = consultationCalendarDates(now);
+    const visitorDate = calendarDateInTimeZone(boundaryNow, "America/New_York");
+    const [businessDate] = boundaryDates;
 
     expect(visitorDate).toBe("2026-09-06");
     expect(businessDate).toBe("2026-09-07");
     expect(visitorDate < businessDate).toBe(true);
     expect(consultationSubmissionSchema.safeParse({ ...validPayload("business_timezone"), preferredDate: businessDate }).success).toBe(true);
+  });
+
+  it("defines the deterministic seven-day Dubai booking window including today", () => {
+    expect(CONSULTATION_BOOKING_DAY_COUNT).toBe(7);
+    expect(boundaryDates).toEqual([
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12",
+      "2026-09-13",
+    ]);
+  });
+
+  it.each([
+    ["first allowed date", boundaryDates[0]!],
+    ["middle allowed date", boundaryDates[3]!],
+    ["final allowed date", boundaryDates[6]!],
+  ])("accepts the %s through the trusted HTTP API", async (suffix, preferredDate) => {
+    const payload = { ...validPayload(`boundary_${suffix.replaceAll(" ", "_")}`), preferredDate };
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send(payload));
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ success: true, data: { status: "PENDING" } });
+    expect(await testDatabase.consultation.count({ where: { name: payload.name } })).toBe(1);
+  });
+
+  it.each([
+    ["date immediately before the allowed range", offsetCalendarDate(boundaryDates[0]!, -1)],
+    ["first calendar date after the UI window", offsetCalendarDate(boundaryDates[6]!, 1)],
+    ["far-future date", "2099-12-31"],
+  ])("rejects the %s through the trusted HTTP API", async (suffix, preferredDate) => {
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send({
+      ...validPayload(`rejected_${suffix.replaceAll(" ", "_")}`),
+      preferredDate,
+    }));
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toMatchObject({ code: "VALIDATION_ERROR", fields: { preferredDate: [expect.any(String)] } });
+  });
+
+  it("rejects an out-of-window request before consultation, counter, or email side effects", async () => {
+    const payload = { ...validPayload("side_effect_guard"), preferredDate: offsetCalendarDate(boundaryDates[6]!, 1) };
+    const referenceYear = Number(boundaryDates[0]!.slice(0, 4));
+    const consultationCountBefore = await testDatabase.consultation.count({ where: { name: payload.name } });
+    const counterBefore = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
+    const notificationsBefore = consultationNotificationAttempts;
+
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send(payload));
+
+    const counterAfter = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    expect(await testDatabase.consultation.count({ where: { name: payload.name } })).toBe(consultationCountBefore);
+    expect(counterAfter?.lastValue).toBe(counterBefore?.lastValue);
+    expect(counterAfter?.updatedAt.getTime()).toBe(counterBefore?.updatedAt.getTime());
+    expect(consultationNotificationAttempts).toBe(notificationsBefore);
   });
 
   it("keeps the health endpoint available", async () => {
@@ -80,7 +163,7 @@ describe("consultation booking API", () => {
     expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
     const record = await testDatabase.consultation.findUnique({ where: { referenceNumber: response.body.data.referenceNumber } });
     expect(record).toMatchObject({ serviceId, status: "PENDING", name: payload.name });
-    expect(record?.preferredDate.toISOString()).toMatch(/^2099-12-31T12:00:00\.000Z$/);
+    expect(record?.preferredDate.toISOString()).toBe(`${payload.preferredDate}T12:00:00.000Z`);
   });
 
   it.each([

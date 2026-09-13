@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
+import { consultationCalendarDates } from "@hhlawyer/validation";
 import { createApp } from "../../app.js";
 import { createTestPrismaClient } from "../../lib/test-database.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
@@ -42,7 +43,7 @@ describe("contact API", () => {
     expect(contactResponse.body).toMatchObject({ success: true, data: { status: "received" } });
     expect(contactNotifications.at(-1)).toMatchObject({ name: contact.name, locale: "ar" });
 
-    const consultationResponse = await request(app).post("/api/v1/consultations").set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: "2099-12-31", preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
+    const consultationResponse = await request(app).post("/api/v1/consultations").set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: consultationCalendarDates()[3]!, preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
     expect(consultationResponse.status).toBe(201);
     expect(consultationResponse.body).toMatchObject({ success: true, data: { status: "PENDING" } });
     expect(JSON.stringify(consultationResponse.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
@@ -71,7 +72,7 @@ describe("contact API", () => {
     const contact = payload("failed_notification");
     expect((await request(createApp({ database, notifier: failing })).post("/api/v1/contact").send(contact)).status).toBe(201);
     expect(await database.contactMessage.count({ where: { name: contact.name } })).toBe(1);
-    const consultation = await createConsultation({ serviceId, name: `${marker}_consultation`, email: "notification@example.test", phone: "+971501234567", preferredDate: "2099-12-31", preferredTime: "09:00 AM", message: "notification safety", website: "" }, new Date(), database, failing);
+    const consultation = await createConsultation({ serviceId, name: `${marker}_consultation`, email: "notification@example.test", phone: "+971501234567", preferredDate: consultationCalendarDates()[3]!, preferredTime: "09:00 AM", message: "notification safety", website: "" }, new Date(), database, failing);
     expect(await database.consultation.count({ where: { referenceNumber: consultation.referenceNumber } })).toBe(1);
   });
 });

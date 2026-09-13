@@ -1,5 +1,5 @@
 import type { ConsultationSubmission } from "@hhlawyer/types";
-import { calendarDateInTimeZone } from "@hhlawyer/validation";
+import { CONSULTATION_BOOKING_DAY_COUNT, consultationCalendarDates } from "@hhlawyer/validation";
 import { ConsultationStatus, Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import { env } from "../../config/env.js";
@@ -13,9 +13,9 @@ type TransactionClient = Prisma.TransactionClient;
 
 const consultationTransactionTimeoutMs = 15_000;
 
-function businessDateParts(now: Date) {
-  const date = calendarDateInTimeZone(now, env.BUSINESS_TIME_ZONE);
-  return { year: Number(date.slice(0, 4)), date };
+function bookingWindow(now: Date) {
+  const dates = consultationCalendarDates(now, CONSULTATION_BOOKING_DAY_COUNT, env.BUSINESS_TIME_ZONE);
+  return { year: Number(dates[0]!.slice(0, 4)), dates };
 }
 
 /** Stores a selected calendar day at UTC noon so its YYYY-MM-DD value is deterministic. */
@@ -56,10 +56,10 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
     throw new AppError(400, "SPAM_DETECTED", "Unable to submit the consultation request.");
   }
 
-  const businessDate = businessDateParts(now);
-  if (input.preferredDate < businessDate.date) {
-    throw new AppError(400, "VALIDATION_ERROR", "Please select a future date.", {
-      preferredDate: ["Please select a date that is not in the past."],
+  const window = bookingWindow(now);
+  if (!window.dates.includes(input.preferredDate)) {
+    throw new AppError(400, "VALIDATION_ERROR", "Please select an available date.", {
+      preferredDate: ["Please select a date within the available booking window."],
     });
   }
 
@@ -73,10 +73,10 @@ export async function createConsultation(input: ConsultationSubmission, now = ne
         throw new AppError(404, "SERVICE_NOT_FOUND", "The selected service is not available.");
       }
 
-      const sequence = await nextSequence(transaction, businessDate.year);
+      const sequence = await nextSequence(transaction, window.year);
       const consultation = await transaction.consultation.create({
         data: {
-          referenceNumber: formatConsultationReference(businessDate.year, sequence),
+          referenceNumber: formatConsultationReference(window.year, sequence),
           serviceId: input.serviceId,
           name: input.name,
           email: input.email,

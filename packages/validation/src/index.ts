@@ -10,6 +10,7 @@ export const serviceSchema = z.object({
 
 export const BOOKING_TIME_SLOTS = ["09:00 AM", "10:30 AM", "01:00 PM", "04:30 PM"] as const;
 export const DEFAULT_BUSINESS_TIME_ZONE = "Asia/Dubai";
+export const CONSULTATION_BOOKING_DAY_COUNT = 7;
 
 export function calendarDateInTimeZone(now: Date, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -23,7 +24,7 @@ export function calendarDateInTimeZone(now: Date, timeZone = DEFAULT_BUSINESS_TI
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export function consultationCalendarDates(now = new Date(), count = 7, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
+export function consultationCalendarDates(now = new Date(), count = CONSULTATION_BOOKING_DAY_COUNT, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
   if (!Number.isInteger(count) || count < 1) {
     throw new RangeError("Consultation calendar date count must be a positive integer.");
   }

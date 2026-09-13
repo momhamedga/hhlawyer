@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { Prisma } from "@prisma/client";
+import { consultationCalendarDates } from "@hhlawyer/validation";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
@@ -74,7 +75,7 @@ describe("consultation database error observability", () => {
         name: "Observability Test",
         email: "observability@example.test",
         phone: "+971 50 123 4567",
-        preferredDate: "2099-12-31",
+        preferredDate: consultationCalendarDates()[3]!,
         preferredTime: "09:00 AM",
         message: "Synthetic test payload",
         website: "",
