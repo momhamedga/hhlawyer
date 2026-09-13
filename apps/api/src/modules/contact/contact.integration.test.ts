@@ -18,6 +18,7 @@ const notifier: EmailNotifier = {
 };
 const app = createApp({ database, notifier, contactRateLimit: 100, consultationRateLimit: 100 });
 const rateApp = createApp({ database, notifier, contactRateLimit: 5 });
+const origin = "http://localhost:3000";
 let serviceId = "";
 
 function payload(suffix = "valid") { return { name: `${marker}_${suffix}`, email: `${suffix}.${Date.now()}@example.test`, subject: "Legal enquiry", message: "This is a valid contact test message.", website: "" }; }
@@ -28,7 +29,7 @@ afterAll(async () => { await database.contactMessage.deleteMany({ where: { name:
 describe("contact API", () => {
   it("persists a valid unread message and notifies without echoing PII", async () => {
     const input = payload("created");
-    const response = await request(app).post("/api/v1/contact").send(input);
+    const response = await request(app).post("/api/v1/contact").set("Origin", origin).send(input);
     expect(response.status).toBe(201); expect(response.body).toMatchObject({ success: true, data: { status: "received" } });
     expect(response.body.data).not.toHaveProperty("id"); expect(response.body.data).not.toHaveProperty("message"); expect(response.body.data).not.toHaveProperty("email");
     expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
@@ -38,12 +39,12 @@ describe("contact API", () => {
 
   it("uses the accepted locale as internal email presentation context without changing either API response", async () => {
     const contact = payload("arabic_email");
-    const contactResponse = await request(app).post("/api/v1/contact").set("Accept-Language", "ar-AE,ar;q=0.9").send(contact);
+    const contactResponse = await request(app).post("/api/v1/contact").set("Origin", origin).set("Accept-Language", "ar-AE,ar;q=0.9").send(contact);
     expect(contactResponse.status).toBe(201);
     expect(contactResponse.body).toMatchObject({ success: true, data: { status: "received" } });
     expect(contactNotifications.at(-1)).toMatchObject({ name: contact.name, locale: "ar" });
 
-    const consultationResponse = await request(app).post("/api/v1/consultations").set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: consultationCalendarDates()[3]!, preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
+    const consultationResponse = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Accept-Language", "ar-AE,ar;q=0.9").send({ serviceId, name: `${marker}_arabic_consultation`, email: "arabic@example.test", phone: "+971501234567", preferredDate: consultationCalendarDates()[3]!, preferredTime: "09:00 AM", message: "Arabic email presentation context.", website: "" });
     expect(consultationResponse.status).toBe(201);
     expect(consultationResponse.body).toMatchObject({ success: true, data: { status: "PENDING" } });
     expect(JSON.stringify(consultationResponse.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
@@ -51,26 +52,27 @@ describe("contact API", () => {
   });
 
   it.each([["name", { name: "x" }], ["email", { email: "bad" }], ["subject", { subject: "x" }], ["short message", { message: "short" }], ["oversized message", { message: "x".repeat(5_001) }], ["status", { status: "READ" }], ["unknown field", { id: "x" }]])("rejects invalid %s", async (_label, invalid) => {
-    const response = await request(app).post("/api/v1/contact").send({ ...payload("invalid"), ...invalid });
+    const response = await request(app).post("/api/v1/contact").set("Origin", origin).send({ ...payload("invalid"), ...invalid });
     expect(response.status).toBe(400); expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
-  it("rejects honeypot data without persistence", async () => { const input = { ...payload("honeypot"), website: "bot" }; const response = await request(app).post("/api/v1/contact").send(input); expect(response.status).toBe(400); expect(response.body.error.code).toBe("SPAM_DETECTED"); expect(await database.contactMessage.count({ where: { name: input.name } })).toBe(0); });
-  it("enforces a separate contact limit", async () => { for (let index = 0; index < 5; index += 1) expect((await request(rateApp).post("/api/v1/contact").send(payload(`rate_${index}`))).status).toBe(201); expect((await request(rateApp).post("/api/v1/contact").send(payload("limited"))).status).toBe(429); });
+  it("rejects honeypot data without persistence", async () => { const input = { ...payload("honeypot"), website: "bot" }; const response = await request(app).post("/api/v1/contact").set("Origin", origin).send(input); expect(response.status).toBe(400); expect(response.body.error.code).toBe("SPAM_DETECTED"); expect(await database.contactMessage.count({ where: { name: input.name } })).toBe(0); });
+  it("rejects missing Origin before database and notification side effects", async () => { const input = payload("missing_origin"); const recordsBefore = await database.contactMessage.count({ where: { name: input.name } }); const notificationsBefore = contactNotifications.length; const response = await request(app).post("/api/v1/contact").send(input); expect(response.status).toBe(403); expect(response.body.error.code).toBe("CSRF_ORIGIN_DENIED"); expect(await database.contactMessage.count({ where: { name: input.name } })).toBe(recordsBefore); expect(contactNotifications).toHaveLength(notificationsBefore); });
+  it("enforces a separate contact limit", async () => { for (let index = 0; index < 5; index += 1) expect((await request(rateApp).post("/api/v1/contact").set("Origin", origin).send(payload(`rate_${index}`))).status).toBe(201); expect((await request(rateApp).post("/api/v1/contact").set("Origin", origin).send(payload("limited"))).status).toBe(429); });
 
   it("does not trust forwarded IPs unless proxy trust is configured", async () => {
     const direct = createApp({ database, notifier, contactRateLimit: 1, trustProxy: 0 });
-    expect((await request(direct).post("/api/v1/contact").set("X-Forwarded-For", "198.51.100.1").send(payload("proxy_direct_1"))).status).toBe(201);
-    expect((await request(direct).post("/api/v1/contact").set("X-Forwarded-For", "198.51.100.2").send(payload("proxy_direct_2"))).status).toBe(429);
+    expect((await request(direct).post("/api/v1/contact").set("Origin", origin).set("X-Forwarded-For", "198.51.100.1").send(payload("proxy_direct_1"))).status).toBe(201);
+    expect((await request(direct).post("/api/v1/contact").set("Origin", origin).set("X-Forwarded-For", "198.51.100.2").send(payload("proxy_direct_2"))).status).toBe(429);
     const trusted = createApp({ database, notifier, contactRateLimit: 1, trustProxy: 1 });
-    expect((await request(trusted).post("/api/v1/contact").set("X-Forwarded-For", "198.51.100.3").send(payload("proxy_trusted_1"))).status).toBe(201);
-    expect((await request(trusted).post("/api/v1/contact").set("X-Forwarded-For", "198.51.100.4").send(payload("proxy_trusted_2"))).status).toBe(201);
+    expect((await request(trusted).post("/api/v1/contact").set("Origin", origin).set("X-Forwarded-For", "198.51.100.3").send(payload("proxy_trusted_1"))).status).toBe(201);
+    expect((await request(trusted).post("/api/v1/contact").set("Origin", origin).set("X-Forwarded-For", "198.51.100.4").send(payload("proxy_trusted_2"))).status).toBe(201);
   });
 
   it("keeps persisted contact and consultation records when notification fails", async () => {
     const failing: EmailNotifier = { provider: "mock", async sendContactNotification() { throw new Error("FAIL"); }, async sendConsultationNotification() { throw new Error("FAIL"); } };
     const contact = payload("failed_notification");
-    expect((await request(createApp({ database, notifier: failing })).post("/api/v1/contact").send(contact)).status).toBe(201);
+    expect((await request(createApp({ database, notifier: failing })).post("/api/v1/contact").set("Origin", origin).send(contact)).status).toBe(201);
     expect(await database.contactMessage.count({ where: { name: contact.name } })).toBe(1);
     const consultation = await createConsultation({ serviceId, name: `${marker}_consultation`, email: "notification@example.test", phone: "+971501234567", preferredDate: consultationCalendarDates()[3]!, preferredTime: "09:00 AM", message: "notification safety", website: "" }, new Date(), database, failing);
     expect(await database.consultation.count({ where: { referenceNumber: consultation.referenceNumber } })).toBe(1);

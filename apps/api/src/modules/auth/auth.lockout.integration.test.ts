@@ -10,10 +10,11 @@ const unknownEmail = `${marker}-unknown@example.test`;
 const password = "a securely long test password";
 const database = createTestPrismaClient();
 const app = createApp({ database, loginRateLimit: 1_000, requestRateLimit: 1_000 });
+const origin = "http://localhost:3000";
 let userId = "";
 
 async function loginWith(candidatePassword: string, candidateEmail = email) {
-  return request(app).post("/api/v1/auth/login").send({ email: candidateEmail, password: candidatePassword });
+  return request(app).post("/api/v1/auth/login").set("Origin", origin).send({ email: candidateEmail, password: candidatePassword });
 }
 
 async function userState() {

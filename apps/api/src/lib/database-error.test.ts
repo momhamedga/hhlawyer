@@ -69,6 +69,7 @@ describe("consultation database error observability", () => {
 
     const response = await request(app)
       .post("/api/v1/consultations")
+      .set("Origin", "http://localhost:3000")
       .set("x-request-id", requestId)
       .send({
         serviceId: "cm00000000000000000000000",

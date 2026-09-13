@@ -35,7 +35,7 @@ beforeAll(async () => {
     ids.users.push(user.id);
 
     const agent = request.agent(app);
-    const response = await agent.post("/api/v1/auth/login").send({
+    const response = await agent.post("/api/v1/auth/login").set("Origin", "http://localhost:3000").send({
       email: `${marker}.${role.toLowerCase()}@example.test`,
       password,
     });

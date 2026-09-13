@@ -16,6 +16,7 @@ const notifier: EmailNotifier = {
 };
 const app = createApp({ database: testDatabase, consultationRateLimit: 100, notifier });
 const rateLimitedApp = createApp({ database: testDatabase, consultationRateLimit: 5, notifier });
+const origin = "http://localhost:3000";
 let serviceId = "";
 
 const boundaryNow = new Date("2026-09-06T20:30:00.000Z");
@@ -97,7 +98,7 @@ describe("consultation booking API", () => {
     ["final allowed date", boundaryDates[6]!],
   ])("accepts the %s through the trusted HTTP API", async (suffix, preferredDate) => {
     const payload = { ...validPayload(`boundary_${suffix.replaceAll(" ", "_")}`), preferredDate };
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send(payload));
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send(payload));
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ success: true, data: { status: "PENDING" } });
@@ -109,7 +110,7 @@ describe("consultation booking API", () => {
     ["first calendar date after the UI window", offsetCalendarDate(boundaryDates[6]!, 1)],
     ["far-future date", "2099-12-31"],
   ])("rejects the %s through the trusted HTTP API", async (suffix, preferredDate) => {
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send({
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send({
       ...validPayload(`rejected_${suffix.replaceAll(" ", "_")}`),
       preferredDate,
     }));
@@ -125,7 +126,7 @@ describe("consultation booking API", () => {
     const counterBefore = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
     const notificationsBefore = consultationNotificationAttempts;
 
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").send(payload));
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send(payload));
 
     const counterAfter = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
     expect(response.status).toBe(400);
@@ -149,9 +150,27 @@ describe("consultation booking API", () => {
     expect(JSON.stringify(response.body)).not.toMatch(/CONTACT_NOTIFICATION_TO|notificationRecipients|primary@example\.test|backup@example\.test/);
   });
 
+  it("rejects missing Origin before consultation, counter, or email side effects", async () => {
+    const payload = validPayload("missing_origin");
+    const referenceYear = Number(payload.preferredDate.slice(0, 4));
+    const consultationCountBefore = await testDatabase.consultation.count({ where: { name: payload.name } });
+    const counterBefore = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
+    const notificationsBefore = consultationNotificationAttempts;
+
+    const response = await request(app).post("/api/v1/consultations").send(payload);
+
+    const counterAfter = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("CSRF_ORIGIN_DENIED");
+    expect(await testDatabase.consultation.count({ where: { name: payload.name } })).toBe(consultationCountBefore);
+    expect(counterAfter?.lastValue).toBe(counterBefore?.lastValue);
+    expect(counterAfter?.updatedAt.getTime()).toBe(counterBefore?.updatedAt.getTime());
+    expect(consultationNotificationAttempts).toBe(notificationsBefore);
+  });
+
   it("creates a pending consultation with a private response", async () => {
     const payload = validPayload("created");
-    const response = await request(app).post("/api/v1/consultations").send(payload);
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send(payload);
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ success: true, data: { status: "PENDING" } });
     expect(response.body.data.referenceNumber).toMatch(/^CONS-\d{4}-\d{6}$/);
@@ -179,18 +198,18 @@ describe("consultation booking API", () => {
     ["server controlled reference", { referenceNumber: "CONS-2099-000001" }],
     ["server controlled id", { id: "abc" }],
   ])("rejects %s", async (_label, invalid) => {
-    const response = await request(app).post("/api/v1/consultations").send({ ...validPayload("invalid"), ...invalid });
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send({ ...validPayload("invalid"), ...invalid });
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("rejects a missing service and an inactive service", async () => {
-    const missing = await request(app).post("/api/v1/consultations").send({ ...validPayload("missing"), serviceId: "ck000000000000000000000000" });
+    const missing = await request(app).post("/api/v1/consultations").set("Origin", origin).send({ ...validPayload("missing"), serviceId: "ck000000000000000000000000" });
     expect(missing.status).toBe(404);
     expect(missing.body.error.code).toBe("SERVICE_NOT_FOUND");
 
     await testDatabase.service.update({ where: { id: serviceId }, data: { isActive: false } });
-    const inactive = await request(app).post("/api/v1/consultations").send(validPayload("inactive"));
+    const inactive = await request(app).post("/api/v1/consultations").set("Origin", origin).send(validPayload("inactive"));
     expect(inactive.status).toBe(404);
     expect(inactive.body.error.code).toBe("SERVICE_NOT_FOUND");
     await testDatabase.service.update({ where: { id: serviceId }, data: { isActive: true } });
@@ -198,14 +217,14 @@ describe("consultation booking API", () => {
 
   it("rejects the honeypot without a database record", async () => {
     const payload = { ...validPayload("honeypot"), website: "bot.example" };
-    const response = await request(app).post("/api/v1/consultations").send(payload);
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send(payload);
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("SPAM_DETECTED");
     expect(await testDatabase.consultation.count({ where: { name: payload.name } })).toBe(0);
   });
 
   it("returns a safe malformed JSON error", async () => {
-    const response = await request(app).post("/api/v1/consultations").set("Content-Type", "application/json").send("{");
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Content-Type", "application/json").send("{");
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("MALFORMED_JSON");
   });
@@ -218,7 +237,7 @@ describe("consultation booking API", () => {
 
   it("allocates unique references for concurrent submissions", async () => {
     const responses = await Promise.all(Array.from({ length: 6 }, (_, index) =>
-      request(app).post("/api/v1/consultations").send(validPayload(`concurrent_${index}`)),
+      request(app).post("/api/v1/consultations").set("Origin", origin).send(validPayload(`concurrent_${index}`)),
     ));
     expect(responses.every((response) => response.status === 201)).toBe(true);
     const references = responses.map((response) => response.body.data.referenceNumber);
@@ -228,10 +247,10 @@ describe("consultation booking API", () => {
 
   it("enforces the endpoint-specific rate limit", async () => {
     for (let index = 0; index < 5; index += 1) {
-      const response = await request(rateLimitedApp).post("/api/v1/consultations").send(validPayload(`rate_${index}`));
+      const response = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).send(validPayload(`rate_${index}`));
       expect(response.status).toBe(201);
     }
-    const limited = await request(rateLimitedApp).post("/api/v1/consultations").send(validPayload("rate_limited"));
+    const limited = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).send(validPayload("rate_limited"));
     expect(limited.status).toBe(429);
     expect(limited.body.error.code).toBe("RATE_LIMITED");
   });

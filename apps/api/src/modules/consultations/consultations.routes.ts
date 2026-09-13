@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import rateLimit from "express-rate-limit";
+import { requireApprovedOrigin } from "../../middleware/origin.js";
 import { createPostConsultation } from "./consultations.controller.js";
 import type { PrismaClientLike } from "./consultations.service.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
@@ -23,6 +24,6 @@ export function createConsultationsRouter(database?: PrismaClientLike, limit = 5
       });
     },
   });
-  router.post("/consultations", consultationRateLimit, createPostConsultation(database, notifier));
+  router.post("/consultations", requireApprovedOrigin, consultationRateLimit, createPostConsultation(database, notifier));
   return router;
 }

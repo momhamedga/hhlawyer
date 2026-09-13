@@ -6,7 +6,7 @@ import { hashPassword } from "./auth.service.js";
 
 const marker=`phase6c1b_${Date.now()}`, password="phase6c1b secure password";
 const db=createIsolatedTestPrismaClient(), app=createApp({database:db}); const ids:string[]=[];
-async function makeAdmin(name:string){const user=await db.user.create({data:{name,email:`${marker}.${name}@example.test`,role:"ADMIN",passwordHash:await hashPassword(password)}});ids.push(user.id);const agent=request.agent(app);expect((await agent.post("/api/v1/auth/login").send({email:user.email,password})).status).toBe(200);return{user,agent};}
+async function makeAdmin(name:string){const user=await db.user.create({data:{name,email:`${marker}.${name}@example.test`,role:"ADMIN",passwordHash:await hashPassword(password)}});ids.push(user.id);const agent=request.agent(app);expect((await agent.post("/api/v1/auth/login").set("Origin","http://localhost:3000").send({email:user.email,password})).status).toBe(200);return{user,agent};}
 const activeAdmins=()=>db.user.count({where:{role:"ADMIN",isActive:true}});
 beforeAll(async()=>{await db.auditLog.deleteMany();await db.session.deleteMany();await db.user.deleteMany();},30_000);
 afterAll(async()=>{await db.auditLog.deleteMany({where:{entityId:{in:ids}}});await db.session.deleteMany({where:{userId:{in:ids}}});await db.user.deleteMany({where:{id:{in:ids}}});await db.$disconnect();});

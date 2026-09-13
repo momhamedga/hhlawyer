@@ -18,7 +18,7 @@ beforeAll(async () => {
     const user = await database.user.create({ data: { email: `${marker}.${role.toLowerCase()}@example.test`, name: `${marker} ${role}`, role, passwordHash: await hashPassword(password) } });
     ids.users.push(user.id);
     const agent = request.agent(app);
-    expect((await agent.post("/api/v1/auth/login").send({ email: user.email, password })).status).toBe(200);
+    expect((await agent.post("/api/v1/auth/login").set("Origin", "http://localhost:3000").send({ email: user.email, password })).status).toBe(200);
     agents[role] = agent;
   }
   const contacts = await Promise.all([
@@ -74,5 +74,7 @@ describe("contact administration API", () => {
 
     const deniedOrigin = await agents.ADMIN.patch(`/api/v1/admin/contacts/${unreadId}/status`).set("Origin", "https://attacker.example").send({ status: "REPLIED" });
     expect(deniedOrigin.status).toBe(403);
+    expect((await database.contactMessage.findUnique({ where: { id: unreadId } }))?.status).toBe("READ");
+    expect(await database.auditLog.count({ where: { entityId: unreadId, action: "CONTACT_STATUS_CHANGED" } })).toBe(1);
   });
 });
