@@ -13,6 +13,39 @@ async function completeFinder(page: Page, answers: readonly string[]) {
   for (const answer of answers) await page.getByTestId(`finder-option-${answer}`).click();
 }
 
+type FinderRowGeometry = {
+  number: { left: number; right: number; top: number; bottom: number };
+  action: { left: number; right: number; top: number; bottom: number };
+  title: { left: number; right: number; top: number; bottom: number };
+  description: { left: number; right: number; top: number; bottom: number };
+  height: number;
+};
+
+async function finderRowGeometry(page: Page) {
+  return page.locator('[data-testid^="finder-option-"]').evaluateAll((buttons): FinderRowGeometry[] => {
+    const bounds = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    };
+
+    return buttons.map((button) => ({
+      number: bounds(button.querySelector("span")!),
+      action: bounds(button.querySelector("svg")!),
+      title: bounds(button.querySelector("strong")!),
+      description: bounds(button.querySelector("small")!),
+      height: button.getBoundingClientRect().height,
+    }));
+  });
+}
+
+function aligned(values: number[], tolerance = 1) {
+  return Math.max(...values) - Math.min(...values) <= tolerance;
+}
+
+function overlaps(first: FinderRowGeometry["number"], second: FinderRowGeometry["number"]) {
+  return first.left < second.right && first.right > second.left && first.top < second.bottom && first.bottom > second.top;
+}
+
 test("typed finder rules cover every current service and keep choices privacy-safe", () => {
   const paths: ReadonlyArray<[FinderAnswers, string]> = [
     [{ nature: "criminal", focus: "understand", setting: "individual" }, "criminal"],
@@ -32,6 +65,75 @@ test("typed finder rules cover every current service and keep choices privacy-sa
   for (const locale of ["ar", "en"] as const) {
     expect(legalMatterFinderContent[locale].questions).toHaveLength(3);
     expect(JSON.stringify(legalMatterFinderContent[locale])).not.toMatch(/email address|phone number|case number|رقم القضية|البريد الإلكتروني|رقم الهاتف/i);
+  }
+});
+
+test("finder rows use stable direction-aware columns with accessible keyboard actions", async ({ page }) => {
+  for (const locale of ["en", "ar"] as const) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/${locale}/find-your-service`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("html")).toHaveAttribute("dir", locale === "ar" ? "rtl" : "ltr");
+
+    const heading = page.getByRole("heading", { level: 1 });
+    const headingBox = await heading.boundingBox();
+    const headerBox = await page.locator("header").first().boundingBox();
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(headingBox).not.toBeNull();
+    expect(headerBox).not.toBeNull();
+    expect(headingBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
+    expect(headingBox!.y + headingBox!.height).toBeLessThanOrEqual(900);
+
+    const rows = await finderRowGeometry(page);
+    expect(rows).toHaveLength(6);
+    const titleStarts = rows.map((row) => locale === "ar" ? row.title.right : row.title.left);
+    const descriptionStarts = rows.map((row) => locale === "ar" ? row.description.right : row.description.left);
+    const numberCenters = rows.map((row) => (row.number.left + row.number.right) / 2);
+    const actionCenters = rows.map((row) => (row.action.left + row.action.right) / 2);
+    expect(aligned(titleStarts)).toBe(true);
+    expect(aligned(descriptionStarts)).toBe(true);
+    expect(aligned(numberCenters)).toBe(true);
+    expect(aligned(actionCenters)).toBe(true);
+    for (const row of rows) {
+      expect(Math.abs((locale === "ar" ? row.title.right : row.title.left) - (locale === "ar" ? row.description.right : row.description.left))).toBeLessThanOrEqual(1);
+      if (locale === "ar") {
+        expect(row.title.right).toBeLessThanOrEqual(row.action.left);
+        expect(row.action.right).toBeLessThanOrEqual(row.number.left);
+      } else {
+        expect(row.number.right).toBeLessThanOrEqual(row.action.left);
+        expect(row.action.right).toBeLessThanOrEqual(row.title.left);
+      }
+    }
+
+    const firstOption = page.getByTestId("finder-option-criminal");
+    await expect(firstOption).toHaveAccessibleName(new RegExp(legalMatterFinderContent[locale].questions[0].options[0].label));
+    await firstOption.focus();
+    const focusStyle = await firstOption.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return { outlineStyle: style.outlineStyle, outlineWidth: Number.parseFloat(style.outlineWidth) };
+    });
+    expect(focusStyle.outlineStyle).not.toBe("none");
+    expect(focusStyle.outlineWidth).toBeGreaterThanOrEqual(2);
+  }
+});
+
+test("finder row composition stays overlap-free across required responsive widths", async ({ page }) => {
+  for (const locale of ["en", "ar"] as const) {
+    await page.goto(`/${locale}/find-your-service`, { waitUntil: "domcontentloaded" });
+    for (const width of [1440, 1280, 1024, 768, 430, 390, 360]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(page.getByTestId("finder-option-criminal")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      const rows = await finderRowGeometry(page);
+      for (const row of rows) {
+        expect(row.height).toBeGreaterThanOrEqual(44);
+        expect(overlaps(row.number, row.action)).toBe(false);
+        expect(overlaps(row.action, row.title)).toBe(false);
+        expect(overlaps(row.action, row.description)).toBe(false);
+        expect(overlaps(row.number, row.title)).toBe(false);
+        expect(overlaps(row.number, row.description)).toBe(false);
+        expect(overlaps(row.title, row.description)).toBe(false);
+      }
+    }
   }
 });
 

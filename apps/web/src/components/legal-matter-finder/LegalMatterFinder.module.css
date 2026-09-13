@@ -16,12 +16,12 @@
 .question h2 { font-family:var(--font-editorial,Georgia,serif); font-size:clamp(2rem,3.8vw,3.45rem); font-weight:400; letter-spacing:-.045em; line-height:1.12; margin:1rem 0 .8rem; max-width:19ch; }
 .question>p:not(.questionNumber) { color:var(--finder-muted); line-height:1.75; margin:0; max-width:39rem; }
 .options { border-top:1px solid var(--finder-line); margin-top:2.25rem; }
-.options button { align-items:center; background:transparent; border:0; border-bottom:1px solid var(--finder-line); color:var(--finder-ink); cursor:pointer; display:grid; gap:.3rem 1rem; grid-template-columns:2.5rem minmax(0,1fr) auto; min-height:5.6rem; padding:1rem 0; text-align:start; width:100%; }
+.options button { align-items:center; background:transparent; border:0; border-bottom:1px solid var(--finder-line); color:var(--finder-ink); column-gap:1rem; cursor:pointer; display:grid; grid-template-areas:"number action title" "number action description"; grid-template-columns:2.5rem 2.75rem minmax(0,1fr); min-block-size:5.6rem; min-inline-size:0; padding-block:1rem; padding-inline:0; row-gap:.3rem; text-align:start; inline-size:100%; }
 .options button:focus-visible,.navigation button:focus-visible,.resultActions a:focus-visible,.related a:focus-visible { outline:2px solid var(--finder-gold); outline-offset:4px; }
-.options button>span { color:var(--finder-gold); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; grid-row:1/3; letter-spacing:.08em; }
-.options strong { font-family:var(--font-editorial,Georgia,serif); font-size:clamp(1.08rem,1.5vw,1.32rem); font-weight:400; line-height:1.28; }
-.options small { color:var(--finder-muted); font-size:.79rem; line-height:1.5; }
-.options svg { border:1px solid var(--finder-line); color:var(--finder-gold); grid-row:1/3; height:2.3rem; padding:.52rem; transition:background .22s,color .22s,transform .22s; width:2.3rem; }
+.options button>span { align-self:center; color:var(--finder-gold); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; grid-area:number; justify-self:start; letter-spacing:.08em; }
+.options strong { font-family:var(--font-editorial,Georgia,serif); font-size:clamp(1.08rem,1.5vw,1.32rem); font-weight:400; grid-area:title; line-height:1.28; min-inline-size:0; }
+.options small { color:var(--finder-muted); font-size:.79rem; grid-area:description; line-height:1.5; min-inline-size:0; }
+.options svg { border:1px solid var(--finder-line); color:var(--finder-gold); grid-area:action; height:2.3rem; justify-self:center; padding:.52rem; transition:background .22s,color .22s,transform .22s; width:2.3rem; }
 .options button:hover strong { color:var(--finder-gold); }
 .options button:hover svg { background:var(--finder-deep); color:#fff8ed; transform:translate(3px,-3px); }
 .navigation { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; margin-top:2rem; }
@@ -47,7 +47,7 @@
 :global(.dark) .options button:hover svg,.resultActions a { background:#e0bd7c; color:#1c1511; }
 :global(.dark) .resultActions a:nth-child(2) { background:transparent; border-color:var(--finder-ink); color:var(--finder-ink); }
 @media(max-width:760px) { .page { padding-inline:1.25rem; padding-top:6.5rem; } .intro,.flow { grid-template-columns:1fr; gap:1.7rem; } .intro { margin-bottom:3rem; } .context { align-items:center; border-bottom:1px solid var(--finder-line); flex-direction:row; padding-bottom:1rem; } .context p { margin-inline-start:auto; } .question h2 { max-width:20ch; } }
-@media(max-width:480px) { .options button { grid-template-columns:2rem minmax(0,1fr) auto; min-height:5.35rem; } .options small { grid-column:2/4; } .options svg { height:2.1rem; width:2.1rem; } .navigation,.resultActions { align-items:flex-start; flex-direction:column; } .result h1,.intro h1 { font-size:clamp(2.45rem,12vw,3.45rem); } }
+@media(max-width:480px) { .options button { align-items:start; grid-template-areas:"number action" "title title" "description description"; grid-template-columns:minmax(0,1fr) 2.75rem; min-block-size:7.5rem; row-gap:.65rem; } .options button>span,.options svg { align-self:center; } .options svg { height:2.75rem; justify-self:end; width:2.75rem; } .navigation,.resultActions { align-items:flex-start; flex-direction:column; } .result h1,.intro h1 { font-size:clamp(2.45rem,12vw,3.45rem); } }
 :global([dir="rtl"]) .options button:hover svg { transform:translate(-3px,-3px); }
 :global([dir="rtl"]) .navigation button:first-child svg { transform:scaleX(-1); }
 @media(prefers-reduced-motion:reduce) { .question,.result { animation:none; } .options svg,.resultActions a { transition:none; } .options button:hover svg,.resultActions a:hover { transform:none; } }
