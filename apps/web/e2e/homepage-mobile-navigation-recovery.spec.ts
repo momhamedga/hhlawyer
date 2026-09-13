@@ -24,8 +24,10 @@ async function expectMobilePanelFits(page: Page) {
   const dialog = page.getByRole("dialog");
   expect(await dialog.evaluate((element) => Math.round(element.getBoundingClientRect().width) === window.innerWidth)).toBe(true);
   await expect(dialog.locator("nav a")).toHaveCount(6);
-  await expect(dialog.locator('a[href^="tel:"]')).toBeVisible();
-  await expect(dialog.locator('a[href^="mailto:"]')).toBeVisible();
+  await expect(dialog.locator('a[href="tel:+97126261565"]')).toContainText("026261565");
+  await expect(dialog.locator('a[href="mailto:info@hhlawyer.ae"]')).toContainText("info@hhlawyer.ae");
+  await expect(dialog).not.toContainText("0502001797");
+  await expect(dialog).not.toContainText("info@hussein.ae");
   await expect(dialog.getByTestId("mobile-theme-inline")).toBeVisible();
   await expect(dialog.getByTestId("mobile-theme-trigger")).toHaveCount(0);
   await expect(dialog.getByTestId(/mobile-theme-option-/)).toHaveCount(3);

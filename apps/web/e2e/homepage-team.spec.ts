@@ -18,6 +18,40 @@ test("homepage Team content is bilingual, local, semantic, and unique", async ({
     await expect(section.getByText(locale === "ar" ? "مستشار قانوني" : "Legal Consultant", { exact: true })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("dir", locale === "ar" ? "rtl" : "ltr");
 
+    const expectedActions = [
+      {
+        callLabel: locale === "ar" ? "اتصال حسين الحارثي" : "Call Hussein Alharathi",
+        callHref: "tel:+971564322229",
+        hiddenNumbers: ["0564322229", "+971564322229", "971564322229"],
+        whatsappLabel: locale === "ar" ? "واتساب حسين الحارثي" : "WhatsApp Hussein Alharathi",
+        whatsappHref: "https://wa.me/971564322229",
+      },
+      {
+        callLabel: locale === "ar" ? "اتصال المستشار مصطفى منصور" : "Call Mostafa Mansour",
+        callHref: "tel:+971502447609",
+        hiddenNumbers: ["0502447609", "+971502447609", "971502447609"],
+        whatsappLabel: locale === "ar" ? "واتساب المستشار مصطفى منصور" : "WhatsApp Mostafa Mansour",
+        whatsappHref: "https://wa.me/971502447609",
+      },
+    ];
+
+    for (let index = 0; index < expectedActions.length; index += 1) {
+      const card = section.getByTestId(`team-member-${index + 1}`);
+      const expected = expectedActions[index];
+      const call = card.getByRole("link", { name: expected.callLabel, exact: true });
+      const whatsapp = card.getByRole("link", { name: expected.whatsappLabel, exact: true });
+      await expect(call).toHaveAttribute("href", expected.callHref);
+      await expect(whatsapp).toHaveAttribute("href", expected.whatsappHref);
+      await expect(whatsapp).toHaveAttribute("target", "_blank");
+      await expect(whatsapp).toHaveAttribute("rel", "noopener noreferrer");
+      await expect(call.locator("svg")).toHaveAttribute("aria-hidden", "true");
+      await expect(whatsapp.locator("svg")).toHaveAttribute("aria-hidden", "true");
+      await call.focus();
+      await expect(call).toBeFocused();
+      const visibleText = await card.innerText();
+      for (const number of expected.hiddenNumbers) expect(visibleText).not.toContain(number);
+    }
+
     const expectedSources = ["/Hussein-Alharathi-2.webp", "/mostafa.webp"];
     for (let index = 0; index < expectedSources.length; index += 1) {
       const figure = section.locator("figure").nth(index);
@@ -80,6 +114,14 @@ test("homepage Team reflows without overflow at every approved width", async ({ 
     expect(second).not.toBeNull();
     if (width <= 430) expect(Math.abs(first!.x - second!.x)).toBeLessThanOrEqual(1);
     else expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
+    for (const action of await section.locator("article a").all()) {
+      const [actionBox, cardBox] = await Promise.all([action.boundingBox(), action.locator("xpath=ancestor::article").boundingBox()]);
+      expect(actionBox).not.toBeNull();
+      expect(cardBox).not.toBeNull();
+      expect(actionBox!.height).toBeGreaterThanOrEqual(44);
+      expect(actionBox!.x).toBeGreaterThanOrEqual(cardBox!.x - 1);
+      expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });

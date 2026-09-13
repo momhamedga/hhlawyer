@@ -9,6 +9,7 @@ import { LAW_SERVICES } from "@/constants/Services";
 import { BookingSystem } from "@/components/consultation/molecules/BookingSystem";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
+import { PUBLIC_CONTACT } from "@/constants/contact";
 import { localizeService } from "@/i18n/format";
 import { messages } from "@/i18n/messages";
 import styles from "./RemainingPublicPages.module.css";
@@ -34,5 +35,5 @@ export function ConsultationEditorial() {
 
 export function ContactEditorial() {
   const locale = useLocale(); const t = messages[locale].public.contact;
-  return <main className={styles.page}><section className={styles.contactIntro}><div><Label>{text(locale, "Start a conversation", "ابدأ محادثة")}</Label><h1>{t.title}</h1><p>{t.subtitle}</p><p className={styles.contactNote}>{text(locale, "Tell us what you need help understanding. The right next step often starts with a clear question.", "أخبرنا بما تحتاج إلى فهمه. غالبًا ما تبدأ الخطوة التالية الصحيحة بسؤال واضح.")}</p><address><a href="tel:+971502001797"><Phone size={17}/><bdi>0502001797</bdi></a><a href="mailto:info@hussein.ae"><Mail size={17}/><bdi>info@hussein.ae</bdi></a><p><MapPin size={17}/>{messages[locale].public.footer.location}</p></address></div><div className={styles.contactForm}><ContactForm /></div></section></main>;
+  return <main className={styles.page}><section className={styles.contactIntro}><div><Label>{text(locale, "Start a conversation", "ابدأ محادثة")}</Label><h1>{t.title}</h1><p>{t.subtitle}</p><p className={styles.contactNote}>{text(locale, "Tell us what you need help understanding. The right next step often starts with a clear question.", "أخبرنا بما تحتاج إلى فهمه. غالبًا ما تبدأ الخطوة التالية الصحيحة بسؤال واضح.")}</p><address><a href={PUBLIC_CONTACT.phone.href}><Phone aria-hidden="true" size={17}/><bdi>{PUBLIC_CONTACT.phone.display}</bdi></a><a href={PUBLIC_CONTACT.email.href}><Mail aria-hidden="true" size={17}/><bdi>{PUBLIC_CONTACT.email.display}</bdi></a><p><MapPin size={17}/>{messages[locale].public.footer.location}</p></address></div><div className={styles.contactForm}><ContactForm /></div></section></main>;
 }

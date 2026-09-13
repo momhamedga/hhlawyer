@@ -5,6 +5,7 @@ import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
+import { PUBLIC_CONTACT } from "@/constants/contact";
 import { messages } from "@/i18n/messages";
 import styles from "./Footer.module.css";
 
@@ -22,8 +23,8 @@ export function Footer() {
     <section className={styles.signature}>
       <div className={styles.logoField}><BrandLogo variant="footer" /><span aria-hidden="true" /></div>
       <address className={styles.contactField}>
-        <a href="tel:+971502001797"><Phone size={18} /><span><small>{text("Phone", "الهاتف")}</small><bdi>0502001797</bdi></span></a>
-        <a href="mailto:info@hussein.ae"><Mail size={18} /><span><small>{text("Email", "البريد الإلكتروني")}</small><bdi>info@hussein.ae</bdi></span></a>
+        <a href={PUBLIC_CONTACT.phone.href}><Phone aria-hidden="true" size={18} /><span><small>{text("Phone", "الهاتف")}</small><bdi>{PUBLIC_CONTACT.phone.display}</bdi></span></a>
+        <a href={PUBLIC_CONTACT.email.href}><Mail aria-hidden="true" size={18} /><span><small>{text("Email", "البريد الإلكتروني")}</small><bdi>{PUBLIC_CONTACT.email.display}</bdi></span></a>
         <p><MapPin size={18} /><span><small>{text("Location", "الموقع")}</small>{t.public.footer.location}</span></p>
       </address>
     </section>

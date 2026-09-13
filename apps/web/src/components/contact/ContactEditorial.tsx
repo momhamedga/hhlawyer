@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, Mail, MapPin, Phone, Send } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { localizePath, useLocale } from "@/components/providers/LocaleProvider";
+import { PUBLIC_CONTACT } from "@/constants/contact";
 import { messages } from "@/i18n/messages";
 import { ContactForm } from "./ContactForm";
 import styles from "./ContactEditorial.module.css";
@@ -56,8 +57,8 @@ export function ContactEditorial() {
   const reducedMotion = useReducedMotion();
   const enter = reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 };
   const contactRows = [
-    { id: "phone", icon: Phone, label: content.phone, value: "0502001797", href: "tel:+971502001797", ltr: true },
-    { id: "email", icon: Mail, label: content.email, value: "info@hussein.ae", href: "mailto:info@hussein.ae", ltr: true },
+    { id: "phone", icon: Phone, label: content.phone, value: PUBLIC_CONTACT.phone.display, href: PUBLIC_CONTACT.phone.href, ltr: true },
+    { id: "email", icon: Mail, label: content.email, value: PUBLIC_CONTACT.email.display, href: PUBLIC_CONTACT.email.href, ltr: true },
     { id: "location", icon: MapPin, label: content.office, value: location, href: undefined, ltr: false },
   ];
 
