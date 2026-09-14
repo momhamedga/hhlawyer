@@ -85,6 +85,8 @@ const environmentSchema = z
     EMAIL_FROM: z.string().email().optional(),
     CONTACT_NOTIFICATION_TO: notificationRecipientsSchema.optional(),
     AUTH_SECRET: z.string().min(32).default("development-only-auth-secret-change-before-production"),
+    IDEMPOTENCY_HMAC_SECRET: z.string().min(32).default("development-only-idempotency-secret-change-before-production"),
+    PUBLIC_FORM_IDEMPOTENCY_REQUIRED: z.enum(["true", "false"]).default("true").transform((value) => value === "true"),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(14),
     BUSINESS_TIME_ZONE: z.string().default("Asia/Dubai").refine((value) => {
@@ -108,6 +110,8 @@ const environmentSchema = z
       });
     }
     if (value.NODE_ENV === "production" && !process.env.AUTH_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["AUTH_SECRET"], message: "AUTH_SECRET must be explicitly configured in production." });
+    if (value.NODE_ENV === "production" && !process.env.IDEMPOTENCY_HMAC_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["IDEMPOTENCY_HMAC_SECRET"], message: "IDEMPOTENCY_HMAC_SECRET must be explicitly configured in production." });
+    if (value.NODE_ENV === "production" && process.env.PUBLIC_FORM_IDEMPOTENCY_REQUIRED === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PUBLIC_FORM_IDEMPOTENCY_REQUIRED"], message: "PUBLIC_FORM_IDEMPOTENCY_REQUIRED must be explicitly configured in production." });
     if (value.EMAIL_ENABLED && (!value.EMAIL_PROVIDER || !value.EMAIL_API_KEY || !value.EMAIL_FROM || !value.CONTACT_NOTIFICATION_TO)) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["EMAIL_ENABLED"], message: "Enabled email requires provider configuration." });
     }

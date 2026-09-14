@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { BOOKING_TIME_SLOTS, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
 import type { ConsultationCreated, PublicService } from "@hhlawyer/types";
 import type { z } from "zod";
+import { useState } from "react";
 import { Alert, Button, Card, CardContent, Textarea } from "@/components/ui";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { errorMessage, messages } from "@/i18n/messages";
@@ -18,18 +19,32 @@ import { BookingInput } from "./BookingInput";
 import { DateStep, ServiceStep } from "./BookingSteps";
 
 type Values = z.input<typeof consultationSubmissionSchema>;
+type ConsultationAttempt = { input: Values; idempotencyKey: string };
+
+function consultationFingerprint(input: Values) {
+  return JSON.stringify({
+    serviceId: input.serviceId,
+    name: input.name,
+    email: input.email,
+    phone: input.phone,
+    preferredDate: input.preferredDate,
+    preferredTime: input.preferredTime,
+    message: input.message ?? null,
+  });
+}
 
 export function BookingSystem() {
   const locale = useLocale();
   const t = messages[locale].public.consultation;
+  const [attempt, setAttempt] = useState<{ fingerprint: string; key: string } | null>(null);
   const { step, setStep } = useBookingStore();
   const form = useForm<Values>({
     resolver: zodResolver(consultationSubmissionSchema),
     defaultValues: { serviceId: "", name: "", email: "", phone: "", preferredDate: "", preferredTime: "09:00 AM", message: "", website: "" },
   });
   const services = useQuery({ queryKey: ["active-services"], queryFn: ({ signal }) => getActiveServices(signal) });
-  const mutation = useMutation<ConsultationCreated, Error, Values>({
-    mutationFn: (input) => createConsultation(input, locale),
+  const mutation = useMutation<ConsultationCreated, Error, ConsultationAttempt>({
+    mutationFn: ({ input, idempotencyKey }) => createConsultation(input, locale, idempotencyKey),
     retry: false,
     onError: (error) => {
       if (error instanceof ApiClientError && error.error.fields) {
@@ -47,8 +62,14 @@ export function BookingSystem() {
   const days = consultationCalendarDates();
 
   async function submitDetails(values: Values) {
+    const fingerprint = consultationFingerprint(values);
+    const currentAttempt = attempt?.fingerprint === fingerprint
+      ? attempt
+      : { fingerprint, key: crypto.randomUUID() };
+    setAttempt(currentAttempt);
     try {
-      await mutation.mutateAsync(values);
+      await mutation.mutateAsync({ input: values, idempotencyKey: currentAttempt.key });
+      setAttempt(null);
       form.reset({ serviceId: values.serviceId, preferredDate: values.preferredDate, preferredTime: values.preferredTime, name: "", email: "", phone: "", message: "", website: "" });
     } catch {
       return;

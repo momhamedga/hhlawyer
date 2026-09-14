@@ -1,10 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { CONSULTATION_BOOKING_DAY_COUNT, calendarDateInTimeZone, consultationCalendarDates, consultationSubmissionSchema } from "@hhlawyer/validation";
 import { createApp } from "../../app.js";
 import { createTestPrismaClient } from "../../lib/test-database.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
 import { formatConsultationReference } from "./consultations.service.js";
+import { hashIdempotencyKey } from "../public-submissions/idempotency.js";
 
 const marker = `PHASE3B_TEST_${Date.now()}`;
 const testDatabase = createTestPrismaClient();
@@ -18,6 +20,9 @@ const app = createApp({ database: testDatabase, consultationRateLimit: 100, noti
 const rateLimitedApp = createApp({ database: testDatabase, consultationRateLimit: 5, notifier });
 const origin = "http://localhost:3000";
 let serviceId = "";
+const idempotencyKeys: string[] = [];
+
+function idempotencyKey() { const key = randomUUID(); idempotencyKeys.push(key); return key; }
 
 const boundaryNow = new Date("2026-09-06T20:30:00.000Z");
 const boundaryDates = consultationCalendarDates(boundaryNow);
@@ -59,6 +64,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await testDatabase.consultation.deleteMany({ where: { name: { startsWith: marker } } });
+  await testDatabase.publicSubmissionIdempotency.deleteMany({ where: { keyHash: { in: idempotencyKeys.map(hashIdempotencyKey) } } });
   await testDatabase.service.updateMany({ where: { id: serviceId }, data: { isActive: true } });
   await testDatabase.$disconnect();
 });
@@ -98,7 +104,7 @@ describe("consultation booking API", () => {
     ["final allowed date", boundaryDates[6]!],
   ])("accepts the %s through the trusted HTTP API", async (suffix, preferredDate) => {
     const payload = { ...validPayload(`boundary_${suffix.replaceAll(" ", "_")}`), preferredDate };
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send(payload));
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(payload));
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ success: true, data: { status: "PENDING" } });
@@ -110,7 +116,7 @@ describe("consultation booking API", () => {
     ["first calendar date after the UI window", offsetCalendarDate(boundaryDates[6]!, 1)],
     ["far-future date", "2099-12-31"],
   ])("rejects the %s through the trusted HTTP API", async (suffix, preferredDate) => {
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send({
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send({
       ...validPayload(`rejected_${suffix.replaceAll(" ", "_")}`),
       preferredDate,
     }));
@@ -126,7 +132,7 @@ describe("consultation booking API", () => {
     const counterBefore = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
     const notificationsBefore = consultationNotificationAttempts;
 
-    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).send(payload));
+    const response = await withBoundaryClock(() => request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(payload));
 
     const counterAfter = await testDatabase.consultationCounter.findUnique({ where: { year: referenceYear } });
     expect(response.status).toBe(400);
@@ -170,7 +176,7 @@ describe("consultation booking API", () => {
 
   it("creates a pending consultation with a private response", async () => {
     const payload = validPayload("created");
-    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send(payload);
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(payload);
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ success: true, data: { status: "PENDING" } });
     expect(response.body.data.referenceNumber).toMatch(/^CONS-\d{4}-\d{6}$/);
@@ -198,18 +204,18 @@ describe("consultation booking API", () => {
     ["server controlled reference", { referenceNumber: "CONS-2099-000001" }],
     ["server controlled id", { id: "abc" }],
   ])("rejects %s", async (_label, invalid) => {
-    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send({ ...validPayload("invalid"), ...invalid });
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send({ ...validPayload("invalid"), ...invalid });
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("rejects a missing service and an inactive service", async () => {
-    const missing = await request(app).post("/api/v1/consultations").set("Origin", origin).send({ ...validPayload("missing"), serviceId: "ck000000000000000000000000" });
+    const missing = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send({ ...validPayload("missing"), serviceId: "ck000000000000000000000000" });
     expect(missing.status).toBe(404);
     expect(missing.body.error.code).toBe("SERVICE_NOT_FOUND");
 
     await testDatabase.service.update({ where: { id: serviceId }, data: { isActive: false } });
-    const inactive = await request(app).post("/api/v1/consultations").set("Origin", origin).send(validPayload("inactive"));
+    const inactive = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(validPayload("inactive"));
     expect(inactive.status).toBe(404);
     expect(inactive.body.error.code).toBe("SERVICE_NOT_FOUND");
     await testDatabase.service.update({ where: { id: serviceId }, data: { isActive: true } });
@@ -217,7 +223,7 @@ describe("consultation booking API", () => {
 
   it("rejects the honeypot without a database record", async () => {
     const payload = { ...validPayload("honeypot"), website: "bot.example" };
-    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).send(payload);
+    const response = await request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(payload);
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("SPAM_DETECTED");
     expect(await testDatabase.consultation.count({ where: { name: payload.name } })).toBe(0);
@@ -230,14 +236,14 @@ describe("consultation booking API", () => {
   });
 
   it("allows the configured development web origin", async () => {
-    const response = await request(app).post("/api/v1/consultations").set("Origin", "http://localhost:3000").send(validPayload("cors"));
+    const response = await request(app).post("/api/v1/consultations").set("Origin", "http://localhost:3000").set("Idempotency-Key", idempotencyKey()).send(validPayload("cors"));
     expect(response.status).toBe(201);
     expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
   });
 
   it("allocates unique references for concurrent submissions", async () => {
     const responses = await Promise.all(Array.from({ length: 6 }, (_, index) =>
-      request(app).post("/api/v1/consultations").set("Origin", origin).send(validPayload(`concurrent_${index}`)),
+      request(app).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(validPayload(`concurrent_${index}`)),
     ));
     expect(responses.every((response) => response.status === 201)).toBe(true);
     const references = responses.map((response) => response.body.data.referenceNumber);
@@ -247,10 +253,10 @@ describe("consultation booking API", () => {
 
   it("enforces the endpoint-specific rate limit", async () => {
     for (let index = 0; index < 5; index += 1) {
-      const response = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).send(validPayload(`rate_${index}`));
+      const response = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(validPayload(`rate_${index}`));
       expect(response.status).toBe(201);
     }
-    const limited = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).send(validPayload("rate_limited"));
+    const limited = await request(rateLimitedApp).post("/api/v1/consultations").set("Origin", origin).set("Idempotency-Key", idempotencyKey()).send(validPayload("rate_limited"));
     expect(limited.status).toBe(429);
     expect(limited.body.error.code).toBe("RATE_LIMITED");
   });

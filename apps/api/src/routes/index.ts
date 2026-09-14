@@ -23,7 +23,7 @@ interface HealthData {
 
 export const apiPrefix = `/api/${API_VERSION}`;
 
-export function createApiRouter(database?: PrismaClient, consultationLimit?: number, contactLimit?: number, notifier?: EmailNotifier, loginLimit?: number): ExpressRouter {
+export function createApiRouter(database?: PrismaClient, consultationLimit?: number, contactLimit?: number, notifier?: EmailNotifier, loginLimit?: number, publicFormIdempotencyRequired?: boolean): ExpressRouter {
   const router: ExpressRouter = Router();
 
   router.get("/health", (request, response) => {
@@ -39,8 +39,8 @@ export function createApiRouter(database?: PrismaClient, consultationLimit?: num
   response.status(200).json(body);
   });
 
-  router.use(createConsultationsRouter(database, consultationLimit, notifier));
-  router.use(createContactRouter(database, notifier, contactLimit));
+  router.use(createConsultationsRouter(database, consultationLimit, notifier, publicFormIdempotencyRequired));
+  router.use(createContactRouter(database, notifier, contactLimit, publicFormIdempotencyRequired));
   router.use(createAuthRouter(database, loginLimit));
   router.use(createAdminConsultationRouter(database ?? prisma));
   router.use(createAdminContactRouter(database ?? prisma));

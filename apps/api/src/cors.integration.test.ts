@@ -38,11 +38,13 @@ describe("CORS and origin validation", () => {
       const response = await request(app)
         .options("/api/v1/services")
         .set("Origin", origin)
-        .set("Access-Control-Request-Method", "GET");
+        .set("Access-Control-Request-Method", "POST")
+        .set("Access-Control-Request-Headers", "Content-Type, Idempotency-Key");
 
       expect(response.status).toBe(204);
       expect(response.headers["access-control-allow-origin"]).toBe(origin);
       expect(response.headers["access-control-allow-credentials"]).toBe("true");
+      expect(response.headers["access-control-allow-headers"].toLowerCase()).toContain("idempotency-key");
     }
   });
 

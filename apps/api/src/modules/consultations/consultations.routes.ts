@@ -6,7 +6,7 @@ import { createPostConsultation } from "./consultations.controller.js";
 import type { PrismaClientLike } from "./consultations.service.js";
 import type { EmailNotifier } from "../../services/email/email.types.js";
 
-export function createConsultationsRouter(database?: PrismaClientLike, limit = 5, notifier?: EmailNotifier): ExpressRouter {
+export function createConsultationsRouter(database?: PrismaClientLike, limit = 5, notifier?: EmailNotifier, publicFormIdempotencyRequired?: boolean): ExpressRouter {
   const router: ExpressRouter = Router();
   const consultationRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -24,6 +24,6 @@ export function createConsultationsRouter(database?: PrismaClientLike, limit = 5
       });
     },
   });
-  router.post("/consultations", requireApprovedOrigin, consultationRateLimit, createPostConsultation(database, notifier));
+  router.post("/consultations", requireApprovedOrigin, consultationRateLimit, createPostConsultation(database, notifier, publicFormIdempotencyRequired));
   return router;
 }

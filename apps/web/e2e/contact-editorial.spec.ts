@@ -141,6 +141,50 @@ test("Arabic contact submission transports the route locale explicitly", async (
   expect(requestLanguage).toBe("ar");
 });
 
+test("Contact keeps one in-memory idempotency key per logical attempt", async ({ page }) => {
+  const keys: string[] = [];
+  let requestCount = 0;
+  await page.route("**/api/v1/contact", async (route) => {
+    requestCount += 1;
+    keys.push(route.request().headers()["idempotency-key"] ?? "");
+    if (requestCount === 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await route.abort("failed");
+      return;
+    }
+    if (requestCount === 2) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ success: false, error: { code: "NETWORK_ERROR", message: "Try again." } }) });
+      return;
+    }
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: { status: "received", createdAt: "2099-01-01T00:00:00.000Z" } }) });
+  });
+
+  await page.goto("/en/contact", { waitUntil: "networkidle" });
+  await fillValidForm(page, "en");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByRole("button", { name: "Sending..." })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
+  await page.getByLabel("Subject").fill("Changed legal question");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByTestId("contact-form-success")).toBeVisible();
+
+  expect(keys).toHaveLength(3);
+  expect(keys[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  expect(keys[1]).toBe(keys[0]);
+  expect(keys[2]).not.toBe(keys[0]);
+  const storedAfterSuccess = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+  for (const idempotencyKey of keys) expect(storedAfterSuccess).not.toContain(idempotencyKey);
+
+  await page.goto("/en/contact", { waitUntil: "networkidle" });
+  await fillValidForm(page, "en");
+  await page.getByLabel("Subject").fill("Changed legal question");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByTestId("contact-form-success")).toBeVisible();
+  expect(keys[3]).not.toBe(keys[2]);
+});
+
 test("Contact renders its existing API field error without a real submission", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

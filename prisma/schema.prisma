@@ -28,6 +28,23 @@ enum ContactMessageStatus {
   ARCHIVED
 }
 
+enum PublicSubmissionScope {
+  CONTACT
+  CONSULTATION
+}
+
+enum IdempotencyState {
+  PROCESSING
+  COMPLETED
+}
+
+enum NotificationAttemptState {
+  PENDING
+  ATTEMPTING
+  SENT
+  FAILED
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -111,6 +128,26 @@ model ContactMessage {
 
   @@index([status])
   @@index([createdAt])
+}
+
+model PublicSubmissionIdempotency {
+  id                      String                   @id @default(cuid())
+  scope                   PublicSubmissionScope
+  keyHash                 String
+  payloadHmac             String
+  state                   IdempotencyState         @default(PROCESSING)
+  businessId              String?
+  responseReferenceNumber String?
+  responseCreatedAt       DateTime?
+  notificationState       NotificationAttemptState @default(PENDING)
+  notificationAttemptedAt DateTime?
+  completedAt             DateTime?
+  expiresAt               DateTime
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@unique([scope, keyHash])
+  @@index([expiresAt])
 }
 
 model AuditLog {

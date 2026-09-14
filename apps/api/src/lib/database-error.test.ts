@@ -62,6 +62,7 @@ describe("database error classification", () => {
 describe("consultation database error observability", () => {
   it("logs only the safe classification while preserving the public error contract", async () => {
     const database = {
+      publicSubmissionIdempotency: { findUnique: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn().mockRejectedValue(knownRequestError("P2034")),
     } as unknown as PrismaClient;
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -70,6 +71,7 @@ describe("consultation database error observability", () => {
     const response = await request(app)
       .post("/api/v1/consultations")
       .set("Origin", "http://localhost:3000")
+      .set("Idempotency-Key", "00000000-0000-4000-8000-000000000001")
       .set("x-request-id", requestId)
       .send({
         serviceId: "cm00000000000000000000000",

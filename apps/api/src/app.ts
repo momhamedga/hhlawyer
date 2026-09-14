@@ -31,6 +31,7 @@ interface AppOptions {
   requestRateLimit?: number;
   trustProxy?: number;
   notifier?: EmailNotifier;
+  publicFormIdempotencyRequired?: boolean;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -69,7 +70,7 @@ export function createApp(options: AppOptions = {}): Express {
   }),
   );
 
-  app.use(apiPrefix, createApiRouter(options.database, options.consultationRateLimit, options.contactRateLimit, options.notifier, options.loginRateLimit));
+  app.use(apiPrefix, createApiRouter(options.database, options.consultationRateLimit, options.contactRateLimit, options.notifier, options.loginRateLimit, options.publicFormIdempotencyRequired));
   app.use(notFound);
   app.use(errorHandler);
   return app;

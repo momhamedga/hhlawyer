@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { contactSubmissionSchema } from "@hhlawyer/validation";
 import type { ContactMessageCreated } from "@hhlawyer/types";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Alert, Button, Card, CardContent, Textarea } from "@/components/ui";
@@ -14,13 +15,19 @@ import { createContactMessage } from "@/lib/api/consultations";
 import { ContactInput } from "./ContactAtoms";
 
 type ContactValues = z.input<typeof contactSubmissionSchema>;
+type ContactAttempt = { input: ContactValues; idempotencyKey: string };
+
+function contactFingerprint(input: ContactValues) {
+  return JSON.stringify({ name: input.name, email: input.email, subject: input.subject, message: input.message });
+}
 
 export function ContactForm() {
   const locale = useLocale();
   const t = messages[locale].public.contact;
+  const [attempt, setAttempt] = useState<{ fingerprint: string; key: string } | null>(null);
   const form = useForm<ContactValues>({ resolver: zodResolver(contactSubmissionSchema), defaultValues: { name: "", email: "", subject: "", message: "", website: "" } });
-  const mutation = useMutation<ContactMessageCreated, Error, ContactValues>({
-    mutationFn: (input) => createContactMessage(input, locale),
+  const mutation = useMutation<ContactMessageCreated, Error, ContactAttempt>({
+    mutationFn: ({ input, idempotencyKey }) => createContactMessage(input, locale, idempotencyKey),
     retry: false,
     onError: (error) => {
       if (error instanceof ApiClientError && error.error.fields) {
@@ -32,8 +39,14 @@ export function ContactForm() {
   });
 
   async function submitMessage(values: ContactValues) {
+    const fingerprint = contactFingerprint(values);
+    const currentAttempt = attempt?.fingerprint === fingerprint
+      ? attempt
+      : { fingerprint, key: crypto.randomUUID() };
+    setAttempt(currentAttempt);
     try {
-      await mutation.mutateAsync(values);
+      await mutation.mutateAsync({ input: values, idempotencyKey: currentAttempt.key });
+      setAttempt(null);
       form.reset();
     } catch {
       return;

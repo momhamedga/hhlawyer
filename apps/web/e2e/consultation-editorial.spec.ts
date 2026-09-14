@@ -183,6 +183,53 @@ test("Arabic consultation submission transports the route locale explicitly", as
   expect(requestLanguage).toBe("ar");
 });
 
+test("Consultation keeps one in-memory idempotency key per logical attempt", async ({ page }) => {
+  const keys: string[] = [];
+  let requestCount = 0;
+  await page.route("**/api/v1/services", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: [service] }) }));
+  await page.route("**/api/v1/consultations", async (route) => {
+    requestCount += 1;
+    keys.push(route.request().headers()["idempotency-key"] ?? "");
+    if (requestCount === 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await route.abort("failed");
+      return;
+    }
+    if (requestCount === 2) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ success: false, error: { code: "NETWORK_ERROR", message: "Try again." } }) });
+      return;
+    }
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: { referenceNumber: "CONS-2099-000099", status: "PENDING", createdAt: "2099-01-01T00:00:00.000Z" } }) });
+  });
+
+  await page.goto("/en/consultation", { waitUntil: "domcontentloaded" });
+  await completeToDetails(page, "en");
+  await fillValidDetails(page, "en");
+  await page.getByRole("button", { name: "Send consultation request" }).click();
+  await expect(page.getByRole("button", { name: "Sending request..." })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Send consultation request" })).toBeEnabled();
+  await page.getByRole("button", { name: "Send consultation request" }).click();
+  await expect(page.getByRole("button", { name: "Send consultation request" })).toBeEnabled();
+  await page.getByLabel("Additional details (optional)").fill("Meaningfully changed consultation details.");
+  await page.getByRole("button", { name: "Send consultation request" }).click();
+  await expect(page.getByTestId("consultation-booking-success")).toBeVisible();
+
+  expect(keys).toHaveLength(3);
+  expect(keys[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  expect(keys[1]).toBe(keys[0]);
+  expect(keys[2]).not.toBe(keys[0]);
+  const storedAfterSuccess = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+  for (const idempotencyKey of keys) expect(storedAfterSuccess).not.toContain(idempotencyKey);
+
+  await page.goto("/en/consultation", { waitUntil: "domcontentloaded" });
+  await completeToDetails(page, "en");
+  await fillValidDetails(page, "en");
+  await page.getByLabel("Additional details (optional)").fill("Meaningfully changed consultation details.");
+  await page.getByRole("button", { name: "Send consultation request" }).click();
+  await expect(page.getByTestId("consultation-booking-success")).toBeVisible();
+  expect(keys[3]).not.toBe(keys[2]);
+});
+
 test("Consultation renders its existing API validation error without a real submission", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
